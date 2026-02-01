@@ -1,0 +1,326 @@
+.viable-project-sheet {
+  padding: 0;
+  margin-bottom: 2rem;
+  margin-left: 2rem;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-left: 6px solid #ccc;
+  float: right;
+  width: 400px;
+  max-width: 100%;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+@media (max-width: 768px) {
+  .viable-project-sheet {
+    float: none;
+    width: 100%;
+    margin-left: 0;
+  }
+}
+
+.viable-project-sheet h2 {
+  font-size: 1.3rem;
+  margin: 0;
+  padding: 1rem 1.5rem;
+  background: #f8f9fa;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.viable-project-sheet h3 {
+  font-size: 1.2rem;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  padding: 0 1.5rem;
+}
+
+.viable-project-sheet img {
+  width: 100%;
+  height: auto;
+  margin: 0;
+  display: block;
+}
+
+.viable-project-sheet .project-summary {
+  margin: 0;
+  padding: 1rem 1.5rem;
+  font-style: italic;
+  color: #555;
+  background: #fafafa;
+  border-bottom: 1px solid #eee;
+}
+
+.project-length {
+  margin: 0;
+  padding: 0.75rem 1.5rem;
+  background: #fff;
+  border-bottom: 1px solid #eee;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.project-info-box {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #eee;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.info-item:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.info-label {
+  font-weight: 600;
+  color: #666;
+  flex-shrink: 0;
+  margin-right: 1rem;
+}
+
+.info-value {
+  color: #333;
+  text-align: right;
+}
+
+.state-sequence {
+  padding: 1rem 1.5rem;
+  background: #f8f9fa;
+  border-top: 1px solid #eee;
+  border-bottom: 1px solid #eee;
+  font-size: 0.85rem;
+}
+
+.state-label {
+  display: block;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 0.75rem;
+}
+
+.state-current-view {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.state-full-view {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  position: relative;
+}
+
+.state-collapse {
+  position: absolute;
+  right: 0;
+  top: -2px;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #999;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  line-height: 1;
+}
+
+.state-collapse:hover {
+  color: #666;
+}
+
+.state-arrow-left,
+.state-arrow-right {
+  cursor: pointer;
+  color: #999;
+  font-size: 1.2rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 3px;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.state-arrow-left:hover,
+.state-arrow-right:hover {
+  background: #e9ecef;
+  color: #666;
+}
+
+.state-step {
+  display: inline-block;
+  padding: 0.35rem 0.6rem;
+  background: #e9ecef;
+  color: #999;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.state-step.active {
+  background: #d1e7dd;
+  color: #0f5132;
+}
+
+.state-step.current {
+  background: #198754;
+  color: white;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 0.4rem 0.8rem;
+}
+
+.state-arrow {
+  margin: 0 0.3rem;
+  color: #ccc;
+  font-size: 0.9rem;
+}
+
+.state-since {
+  padding: 0.75rem 1.5rem;
+  background: #fff;
+  border-bottom: 1px solid #eee;
+  font-size: 0.85rem;
+  color: #666;
+  font-style: italic;
+}
+
+.tender-documents-box {
+  padding: 1rem 1.5rem;
+  background: #fff;
+  border-top: 1px solid #eee;
+  border-bottom: 1px solid #eee;
+}
+
+.tender-documents-box h4 {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.tender-documents-box p {
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+}
+
+.tender-documents-box a {
+  color: #0066cc;
+  text-decoration: underline;
+}
+
+.state-paralizado-alert {
+  padding: 1rem 1.5rem;
+  background: #fff3cd;
+  border-top: 1px solid #ffecb5;
+  border-bottom: 1px solid #ffecb5;
+  color: #856404;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.alert-icon {
+  font-size: 1.5rem;
+}
+
+.state-paralizado-alert strong {
+  color: #dc3545;
+}
+
+.progress-bar-container {
+  padding: 1rem 1.5rem;
+  background: #fff;
+  border-top: 1px solid #eee;
+  border-bottom: 1px solid #eee;
+}
+
+.progress-bar-label {
+  font-weight: 600;
+  color: #198754;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.progress-bar {
+  background: #e9ecef;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  background: linear-gradient(90deg, #198754, #20c997);
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+/* Estados normales */
+.state-proyecto {
+  border-left-color: #9ca3af;
+}
+
+.state-en-licitacion {
+  border-left-color: #f59e0b;
+}
+
+.state-adjudicado {
+  border-left-color: #6366f1;
+}
+
+.state-en-obras {
+  border-left-color: #10b981;
+}
+
+.state-finalizado {
+  border-left-color: #3b82f6;
+}
+
+/* Estado especial */
+.state-paralizado {
+  border-left-color: #dc2626;
+  background: #fff1f1;
+}
+
+.viable-project-description {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid #e9ecef;
+}
+
+.viable-project-description h3 {
+  font-size: 1.4rem;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.viable-tender-documents {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid #e9ecef;
+}
+
+.viable-tender-documents h3 {
+  font-size: 1.4rem;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+#viable-map {
+  border-top: 1px solid #eee;
+}
+
+#viable-map .leaflet-popup-content {
+  margin: 0.5rem;
+  font-size: 0.9rem;
+}
