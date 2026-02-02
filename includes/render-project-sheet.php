@@ -8,12 +8,19 @@ function viable_render_project_sheet($content) {
 
     $projects = get_field('related_projects');
     if (!$projects) {
-        return '<!-- VIABLE DEBUG: No hay proyectos relacionados -->' . $content;
+        return $content;
     }
 
     // Por ahora asumimos UNO
     $project = is_array($projects) ? $projects[0] : $projects;
     $pid = $project->ID;
+    
+    // Configurar imagen destacada del post si el proyecto tiene imagen
+    $image = get_field('image', $pid);
+    if ($image && !has_post_thumbnail()) {
+        $image_id = is_array($image) ? $image['ID'] : $image;
+        set_post_thumbnail(get_the_ID(), $image_id);
+    }
     
     // DEBUG: Ver TODOS los campos disponibles
     $all_fields = get_fields($pid);
@@ -269,6 +276,78 @@ function viable_render_project_sheet($content) {
 }
 
 add_filter('the_content', 'viable_render_project_sheet', 5);
+
+// Filtro para el extracto: usar short_description del proyecto
+add_filter('get_the_excerpt', 'viable_project_excerpt', 10, 2);
+add_filter('the_excerpt', 'viable_project_excerpt_display');
+
+function viable_project_excerpt($excerpt, $post = null) {
+    if (!$post) {
+        $post = get_post();
+    }
+    
+    if (!$post || $post->post_type !== 'post') {
+        return $excerpt;
+    }
+    
+    $projects = get_field('related_projects', $post->ID);
+    if (!$projects) {
+        return $excerpt;
+    }
+    
+    $project = is_array($projects) ? $projects[0] : $projects;
+    $short_desc = get_field('short_description', $project->ID);
+    
+    if ($short_desc) {
+        return $short_desc;
+    }
+    
+    return $excerpt;
+}
+
+function viable_project_excerpt_display($excerpt) {
+    $projects = get_field('related_projects');
+    if (!$projects) {
+        return $excerpt;
+    }
+    
+    $project = is_array($projects) ? $projects[0] : $projects;
+    $short_desc = get_field('short_description', $project->ID);
+    
+    if ($short_desc) {
+        return wpautop($short_desc);
+    }
+    
+    return $excerpt;
+}
+
+// Configurar imagen destacada desde el proyecto
+add_action('wp', 'viable_set_post_thumbnail');
+
+function viable_set_post_thumbnail() {
+    if (!is_singular('post')) {
+        return;
+    }
+    
+    if (has_post_thumbnail()) {
+        return; // Ya tiene imagen destacada
+    }
+    
+    $projects = get_field('related_projects');
+    if (!$projects) {
+        return;
+    }
+    
+    $project = is_array($projects) ? $projects[0] : $projects;
+    $image = get_field('image', $project->ID);
+    
+    if ($image) {
+        $image_id = is_array($image) ? $image['ID'] : $image;
+        if ($image_id) {
+            set_post_thumbnail(get_the_ID(), $image_id);
+        }
+    }
+}
 
 // Renderizar página individual de proyecto
 add_filter('the_content', 'viable_render_single_project', 5);
