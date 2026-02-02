@@ -324,3 +324,122 @@
   margin: 0.5rem;
   font-size: 0.9rem;
 }
+
+.related-posts-section {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 3px solid #e9ecef;
+}
+
+.related-posts-section h3 {
+  font-size: 1.6rem;
+  margin-bottom: 1.5rem;
+  color: #333;
+}
+
+.related-posts-list {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.related-post-item {
+  padding: 1.5rem;
+  background: #f8f9fa;
+  border-left: 4px solid #0066cc;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.related-post-item:hover {
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.related-post-item h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.2rem;
+}
+
+.related-post-item h4 a {
+  color: #0066cc;
+  text-decoration: none;
+}
+
+.related-post-item h4 a:hover {
+  color: #0052a3;
+  text-decoration: underline;
+}
+
+.related-post-item .post-date {
+  display: block;
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 0.75rem;
+  font-style: italic;
+}
+
+.related-post-item .post-excerpt {
+  color: #555;
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
+/* Category page layout */
+.viable-category-listings {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+@media (max-width: 768px) {
+  .viable-category-listings {
+    grid-template-columns: 1fr;
+  }
+}
+
+.viable-category-column h3 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #0073aa;
+  color: #333;
+}
+
+.viable-category-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.viable-category-list li {
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.viable-category-list li:last-child {
+  border-bottom: none;
+}
+
+.viable-category-list a {
+  color: #0073aa;
+  text-decoration: none;
+  font-size: 1rem;
+  line-height: 1.5;
+  display: block;
+}
+
+.viable-category-list a:hover {
+  color: #005177;
+  text-decoration: underline;
+}
+
+.viable-posts-column h3 {
+  border-bottom-color: #0073aa;
+}
+
+.viable-projects-column h3 {
+  border-bottom-color: #00a32a;
+}
+

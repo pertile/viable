@@ -269,3 +269,166 @@ function viable_render_project_sheet($content) {
 }
 
 add_filter('the_content', 'viable_render_project_sheet', 5);
+
+// Renderizar página individual de proyecto
+add_filter('the_content', 'viable_render_single_project', 5);
+
+function viable_render_single_project($content) {
+    
+    if (!is_singular('project')) {
+        return $content;
+    }
+    
+    $pid = get_the_ID();
+    
+    // Reutilizar la misma lógica de obtención de datos
+    $type        = get_field('type', $pid);
+    $duplication_type = get_field('duplication_type', $pid);
+    $name        = get_the_title($pid);
+    $short_desc  = get_field('short_description', $pid);
+    $length      = get_field('length', $pid);
+    $state       = get_field('state', $pid);
+    $progress    = get_field('progress', $pid);
+    $progress_updated_on = get_field('progress_updated_on', $pid);
+    $end_date    = get_field('end_date', $pid);
+    $duration    = get_field('duration', $pid);
+    $bid_date    = get_field('bid_date', $pid);
+    $award_date  = get_field('award_date', $pid);
+    $start_date  = get_field('start_date', $pid);
+    $tender_documents = get_field('tender_documents', $pid);
+    $code        = get_field('code', $pid);
+    $roads       = get_field('roads', $pid);
+    $regions     = get_field('regions', $pid);
+    $image       = get_field('image', $pid);
+    $map         = get_field('map', $pid);
+    
+    // Función helper para formatear fechas
+    $format_date = function($date_str) {
+        if (!$date_str) return null;
+        $months_es = [
+            1 => 'enero', 2 => 'febrero', 3 => 'marzo', 4 => 'abril',
+            5 => 'mayo', 6 => 'junio', 7 => 'julio', 8 => 'agosto',
+            9 => 'septiembre', 10 => 'octubre', 11 => 'noviembre', 12 => 'diciembre'
+        ];
+        $timestamp = strtotime($date_str);
+        if ($timestamp) {
+            $month_num = (int)date('n', $timestamp);
+            $year = date('Y', $timestamp);
+            return $months_es[$month_num] . ' ' . $year;
+        }
+        return $date_str;
+    };
+    
+    // Formatear end_date
+    $state_lower = strtolower($state);
+    if ($end_date && ($state_lower === 'en construcción' || $state_lower === 'finalizado')) {
+        $end_date = $format_date($end_date);
+    }
+    
+    // Formatear fechas "desde"
+    if ($bid_date) $bid_date_formatted = $format_date($bid_date);
+    if ($award_date) $award_date_formatted = $format_date($award_date);
+    if ($start_date) $start_date_formatted = $format_date($start_date);
+    
+    // Determinar qué tipo mostrar
+    if (strtolower($type) === 'duplicación' && $duplication_type) {
+        $type_display = $duplication_type;
+    } else {
+        $type_display = $type;
+    }
+    
+    // Procesar roads
+    $roads_text = '';
+    if ($roads && is_array($roads)) {
+        $road_names = array_map(function($term) {
+            if (is_object($term) && isset($term->name)) {
+                return $term->name;
+            } elseif (is_array($term) && isset($term['name'])) {
+                return $term['name'];
+            } elseif (is_numeric($term)) {
+                $term_obj = get_term($term);
+                return $term_obj && !is_wp_error($term_obj) ? $term_obj->name : '';
+            }
+            return $term;
+        }, $roads);
+        $roads_text = implode(', ', array_filter($road_names));
+    } elseif ($roads) {
+        $roads_text = is_numeric($roads) ? get_term($roads)->name : $roads;
+    }
+    
+    // Procesar regions
+    $regions_text = '';
+    if ($regions && is_array($regions)) {
+        $region_names = array_map(function($cat) {
+            if (is_object($cat) && isset($cat->name)) {
+                return $cat->name;
+            } elseif (is_array($cat) && isset($cat['name'])) {
+                return $cat['name'];
+            } elseif (is_numeric($cat)) {
+                $cat_obj = get_category($cat);
+                return $cat_obj && !is_wp_error($cat_obj) ? $cat_obj->name : '';
+            }
+            return $cat;
+        }, $regions);
+        $regions_text = implode('; ', array_filter($region_names));
+    } elseif ($regions) {
+        $regions_text = is_numeric($regions) ? get_category($regions)->name : $regions;
+    }
+    
+    // Buscar posts relacionados con este proyecto
+    // ACF guarda relationships como valores individuales (una fila por relación)
+    $related_posts = new WP_Query([
+        'post_type' => 'post',
+        'post_status' => 'publish',
+        'meta_query' => [
+            [
+                'key' => 'related_projects',
+                'value' => $pid,
+                'compare' => '='
+            ]
+        ],
+        'orderby' => 'date',
+        'order' => 'DESC',
+        'posts_per_page' => -1
+    ]);
+    
+    ob_start();
+    
+    // Incluir la misma ficha pero sin el contenido del post
+    include(VIABLE_PATH . 'includes/project-sheet-template.php');
+    
+    ?>
+    <div class="project-content">
+        <?= $content ?>
+    </div>
+    <?php
+    
+    // DEBUG: Verificar posts relacionados
+    echo "<!-- DEBUG: Project ID = $pid -->";
+    echo "<!-- DEBUG: Found posts = " . $related_posts->found_posts . " -->";
+    
+    // Mostrar posts relacionados
+    if ($related_posts->have_posts()) {
+        ?>
+        <section class="related-posts-section">
+            <h3>Artículos relacionados</h3>
+            <div class="related-posts-list">
+                <?php while ($related_posts->have_posts()): $related_posts->the_post(); ?>
+                    <article class="related-post-item">
+                        <h4><a href="<?= get_permalink() ?>"><?= get_the_title() ?></a></h4>
+                        <time class="post-date"><?= get_the_date('j \d\e F \d\e Y') ?></time>
+                        <?php if (has_excerpt()): ?>
+                            <div class="post-excerpt"><?= get_the_excerpt() ?></div>
+                        <?php else: ?>
+                            <div class="post-excerpt"><?= wp_trim_words(get_the_content(), 30) ?></div>
+                        <?php endif; ?>
+                    </article>
+                <?php endwhile; ?>
+            </div>
+        </section>
+        <?php
+        wp_reset_postdata();
+    }
+    
+    return ob_get_clean();
+}

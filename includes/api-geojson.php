@@ -16,6 +16,20 @@ function viable_register_geojson_endpoint() {
             ]
         ]
     ]);
+    
+    register_rest_route('viable/v1', '/category-projects/(?P<id>\d+)', [
+        'methods' => 'GET',
+        'callback' => 'viable_get_category_projects',
+        'permission_callback' => '__return_true',
+        'args' => [
+            'id' => [
+                'required' => true,
+                'validate_callback' => function($param) {
+                    return is_numeric($param);
+                }
+            ]
+        ]
+    ]);
 }
 
 function viable_get_filtered_geojson($request) {
@@ -266,3 +280,114 @@ function viable_read_double($data, $offset, $little_endian) {
     $unpacked = unpack('d', $bytes);
     return $unpacked[1];
 }
+
+function viable_get_category_projects($request) {
+    $category_id = $request['id'];
+    
+    // Obtener todos los proyectos (sin filtrar por categoría primero)
+    $args = [
+        'post_type' => 'project',
+        'post_status' => 'publish',
+        'posts_per_page' => -1
+    ];
+    
+    $projects = new WP_Query($args);
+    
+    if (!$projects->have_posts()) {
+        return [
+            'type' => 'FeatureCollection',
+            'features' => [],
+            'debug' => 'No projects found at all'
+        ];
+    }
+    
+    $gpkg_path = VIABLE_PATH . 'assets/data/viable.gpkg';
+    
+    if (!file_exists($gpkg_path)) {
+        return new WP_Error('not_found', 'GeoPackage file not found', ['status' => 404]);
+    }
+    
+    $db = new SQLite3($gpkg_path, SQLITE3_OPEN_READONLY);
+    
+    // Obtener nombre de la tabla
+    $tables_result = $db->query("SELECT table_name FROM gpkg_contents WHERE data_type = 'features' LIMIT 1");
+    $table_row = $tables_result->fetchArray(SQLITE3_ASSOC);
+    
+    if (!$table_row) {
+        $db->close();
+        return new WP_Error('no_features', 'No feature tables found', ['status' => 404]);
+    }
+    
+    $table_name = $table_row['table_name'];
+    $features = [];
+    $debug_info = [];
+    
+    while ($projects->have_posts()) {
+        $projects->the_post();
+        $pid = get_the_ID();
+        $code = get_field('code', $pid);
+        $regions = get_field('regions', $pid);
+        
+        $debug_info[] = [
+            'pid' => $pid,
+            'title' => get_the_title($pid),
+            'code' => $code,
+            'regions' => $regions
+        ];
+        
+        // Filtrar por categoría
+        if ($regions) {
+            $region_ids = is_array($regions) ? $regions : [$regions];
+            $region_ids = array_map(function($r) {
+                return is_object($r) ? $r->term_id : (is_array($r) ? $r['term_id'] : $r);
+            }, $region_ids);
+            
+            if (!in_array($category_id, $region_ids)) {
+                continue; // Skip projects not in this category
+            }
+        } else {
+            continue; // Skip projects without regions
+        }
+        
+        if (!$code) {
+            continue; // Skip projects without code
+        }
+        
+        // Buscar geometría en GeoPackage
+        $stmt = $db->prepare("SELECT * FROM {$table_name} WHERE code = :code");
+        $stmt->bindValue(':code', $code, SQLITE3_TEXT);
+        $result = $stmt->execute();
+        
+        while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+            $geometry_blob = $row['geometry'];
+            $geometry = viable_wkb_to_geojson($geometry_blob);
+            
+            if ($geometry) {
+                $features[] = [
+                    'type' => 'Feature',
+                    'properties' => [
+                        'code' => $code,
+                        'name' => get_the_title($pid),
+                        'url' => get_permalink($pid),
+                        'state' => get_field('state', $pid),
+                        'type' => get_field('type', $pid),
+                        'tramo' => $row['tramo'] ?? '',
+                        'estado' => $row['estado'] ?? '',
+                        'tipo' => $row['tipo'] ?? ''
+                    ],
+                    'geometry' => $geometry
+                ];
+            }
+        }
+    }
+    
+    wp_reset_postdata();
+    $db->close();
+    
+    return [
+        'type' => 'FeatureCollection',
+        'features' => $features,
+        'debug' => $debug_info
+    ];
+}
+

@@ -18,3 +18,4 @@ require_once VIABLE_PATH . 'includes/shortcodes.php';
 require_once VIABLE_PATH . 'includes/assets.php';
 require_once VIABLE_PATH . 'includes/render-project-sheet.php';
 require_once VIABLE_PATH . 'includes/api-geojson.php';
+require_once VIABLE_PATH . 'includes/category-map.php';

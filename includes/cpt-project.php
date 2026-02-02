@@ -23,14 +23,27 @@ function viable_register_project_cpt() {
     ]);
 }
 
+// Forzar flush de rewrite rules al activar el plugin
+register_activation_hook(VIABLE_PATH . 'viable.php', 'viable_flush_rewrite_rules');
+
+function viable_flush_rewrite_rules() {
+    viable_register_project_cpt();
+    flush_rewrite_rules();
+}
+
 add_action('wp_enqueue_scripts', function () {
-    // Solo cargar en posts singulares que tengan proyectos relacionados
-    if (!is_singular('post')) {
-        return;
-    }
-    
-    $projects = get_field('related_projects');
-    if (!$projects) {
+    // Solo cargar en posts singulares que tengan proyectos relacionados O en páginas de proyectos
+    if (is_singular('post')) {
+        $projects = get_field('related_projects');
+        if (!$projects) {
+            return;
+        }
+    } elseif (is_singular('project')) {
+        $code = get_field('code');
+        if (!$code) {
+            return;
+        }
+    } elseif (!is_category()) {
         return;
     }
     
@@ -54,5 +67,16 @@ add_action('wp_enqueue_scripts', function () {
         '1.0',
         true
     );
+    
+    // Cargar script específico para páginas de categoría
+    if (is_category()) {
+        wp_enqueue_script(
+            'viable-category-map',
+            VIABLE_URL . 'viable-category-map.js',
+            ['leaflet'],
+            '1.0',
+            true
+        );
+    }
 });
 
