@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 'proyecto': '#3388ff',
                 'en licitación': '#ff7f00',
                 'adjudicado': '#ffcc00',
-                'en construcción': '#00cc44',
+                'en obras': '#00cc44',
                 'finalizado': '#888888',
                 'paralizado': '#cc0000'
             };

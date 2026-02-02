@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 define('VIABLE_PATH', plugin_dir_path(__FILE__));
 define('VIABLE_URL', plugin_dir_url(__FILE__));
 
+require_once __DIR__ . '/acf/project-fields.php';
 require_once VIABLE_PATH . 'includes/cpt-project.php';
 require_once VIABLE_PATH . 'includes/shortcodes.php';
 require_once VIABLE_PATH . 'includes/assets.php';

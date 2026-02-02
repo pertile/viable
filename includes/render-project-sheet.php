@@ -64,7 +64,7 @@ function viable_render_project_sheet($content) {
     
     // Formatear end_date
     $state_lower = strtolower($state);
-    if ($end_date && ($state_lower === 'en construcción' || $state_lower === 'finalizado')) {
+    if ($end_date && ($state_lower === 'en obras' || $state_lower === 'finalizado')) {
         $end_date = $format_date($end_date);
     }
     
@@ -150,7 +150,7 @@ function viable_render_project_sheet($content) {
             
             <?php 
             $state_lower = strtolower($state);
-            if (($state_lower === 'finalizado' && $end_date) || ($state_lower === 'en construcción' && $end_date)): 
+            if (($state_lower === 'finalizado' && $end_date) || ($state_lower === 'en obras' && $end_date)): 
             ?>
                 <div class="info-item">
                     <span class="info-label"><?= $state_lower === 'finalizado' ? 'Finalización' : 'Finalización prevista' ?></span>
@@ -181,7 +181,7 @@ function viable_render_project_sheet($content) {
                 </div>
                 <div class="state-full-view" style="display: none;">
                     <?php
-                    $states = ['proyecto', 'en licitación', 'adjudicado', 'en construcción', 'finalizado'];
+                    $states = ['proyecto', 'en licitación', 'adjudicado', 'en obras', 'finalizado'];
                     $current_index = array_search($state_lower, $states);
                     
                     foreach ($states as $index => $s) {
@@ -213,7 +213,7 @@ function viable_render_project_sheet($content) {
         } elseif ($state_lower === 'adjudicado' && isset($award_date_formatted)) {
             $desde_date = $award_date_formatted;
             $desde_label = 'Desde';
-        } elseif ($state_lower === 'en construcción' && isset($start_date_formatted)) {
+        } elseif ($state_lower === 'en obras' && isset($start_date_formatted)) {
             $desde_date = $start_date_formatted;
             $desde_label = 'Desde';
         }
@@ -222,7 +222,7 @@ function viable_render_project_sheet($content) {
             <div class="state-since"><?= esc_html($desde_label) ?>: <?= esc_html($desde_date) ?></div>
         <?php endif; ?>
 
-        <?php if ($state === 'En construcción' && $progress !== null): ?>
+        <?php if ($state === 'En obras' && $progress !== null): ?>
             <div class="progress-bar-container">
                 <div class="progress-bar-label">
                     <?= intval($progress) ?>%<?php if ($progress_updated_on): ?> (<?= esc_html($progress_updated_on) ?>)<?php endif; ?>
@@ -321,7 +321,7 @@ function viable_render_single_project($content) {
     
     // Formatear end_date
     $state_lower = strtolower($state);
-    if ($end_date && ($state_lower === 'en construcción' || $state_lower === 'finalizado')) {
+    if ($end_date && ($state_lower === 'en obras' || $state_lower === 'finalizado')) {
         $end_date = $format_date($end_date);
     }
     
