@@ -11,6 +11,54 @@
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
+/* Asegurar que las imágenes del contenido respeten el espacio del infobox */
+.viable-post-content-wrapper {
+  overflow: hidden;
+  margin-right: 440px; /* 400px del infobox + 40px de espacio */
+}
+
+@media (max-width: 768px) {
+  .viable-post-content-wrapper {
+    margin-right: 0;
+  }
+}
+
+.single-post .entry-content img,
+.single-post .post-content img,
+.single-post article img,
+.single-project .entry-content img,
+.single-project .post-content img,
+.single-project article img,
+.type-post img,
+.type-project img,
+.viable-post-content-wrapper img {
+  max-width: 100%;
+  height: auto;
+}
+
+.single-post .entry-content,
+.single-post .post-content,
+.single-post article,
+.single-project .entry-content,
+.single-project .post-content,
+.single-project article {
+  overflow: hidden;
+}
+
+/* Prevenir que elementos anchos rompan el layout */
+.single-post .entry-content > *,
+.single-post .post-content > *,
+.single-project .entry-content > *,
+.single-project .post-content > *,
+.viable-post-content-wrapper > * {
+  max-width: 100%;
+}
+
+/* Asegurar que el contenido del post fluya alrededor del infobox */
+.viable-post-content-wrapper {
+  display: block;
+}
+
 @media (max-width: 768px) {
   .viable-project-sheet {
     float: none;

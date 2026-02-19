@@ -272,50 +272,45 @@ function viable_render_project_sheet($content) {
         $description_html .= '</section>';
     }
     
-    return $sheet_html . $content . $description_html;
+    // Envolver el contenido para controlar el float
+    $wrapped_content = '<div class="viable-post-content-wrapper">' . $content . '</div>';
+    $wrapped_content .= '<div style="clear: both;"></div>';
+    
+    return $sheet_html . $wrapped_content . $description_html;
 }
 
 add_filter('the_content', 'viable_render_project_sheet', 5);
 
 // Filtro para el extracto: usar short_description del proyecto
 add_filter('get_the_excerpt', 'viable_project_excerpt', 10, 2);
-add_filter('the_excerpt', 'viable_project_excerpt_display');
 
 function viable_project_excerpt($excerpt, $post = null) {
     if (!$post) {
         $post = get_post();
     }
     
-    if (!$post || $post->post_type !== 'post') {
+    if (!$post) {
         return $excerpt;
     }
     
-    $projects = get_field('related_projects', $post->ID);
-    if (!$projects) {
-        return $excerpt;
+    // Para posts: usar short_description del proyecto relacionado
+    if ($post->post_type === 'post') {
+        $projects = get_field('related_projects', $post->ID);
+        if ($projects) {
+            $project = is_array($projects) ? $projects[0] : $projects;
+            $short_desc = get_field('short_description', $project->ID);
+            if ($short_desc) {
+                return $short_desc;
+            }
+        }
     }
     
-    $project = is_array($projects) ? $projects[0] : $projects;
-    $short_desc = get_field('short_description', $project->ID);
-    
-    if ($short_desc) {
-        return $short_desc;
-    }
-    
-    return $excerpt;
-}
-
-function viable_project_excerpt_display($excerpt) {
-    $projects = get_field('related_projects');
-    if (!$projects) {
-        return $excerpt;
-    }
-    
-    $project = is_array($projects) ? $projects[0] : $projects;
-    $short_desc = get_field('short_description', $project->ID);
-    
-    if ($short_desc) {
-        return wpautop($short_desc);
+    // Para proyectos: usar su propio short_description
+    if ($post->post_type === 'project') {
+        $short_desc = get_field('short_description', $post->ID);
+        if ($short_desc) {
+            return $short_desc;
+        }
     }
     
     return $excerpt;
@@ -477,9 +472,10 @@ function viable_render_single_project($content) {
     include(VIABLE_PATH . 'includes/project-sheet-template.php');
     
     ?>
-    <div class="project-content">
+    <div class="viable-post-content-wrapper">
         <?= $content ?>
     </div>
+    <div style="clear: both;"></div>
     <?php
     
     // DEBUG: Verificar posts relacionados

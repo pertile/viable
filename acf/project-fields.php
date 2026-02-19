@@ -124,7 +124,7 @@ add_action( 'acf/include_fields', function() {
 				'Duplicación' => 'Duplicación',
 				'Colectoras' => 'Colectoras',
 				'Ampliación carriles' => 'Ampliación carriles',
-				'Tercera trocha' => 'Tercera trocha',
+				'Puente' => 'Puente',
 			),
 			'default_value' => 'Pavimentación',
 			'return_format' => 'value',

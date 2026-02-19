@@ -34,7 +34,7 @@ function viable_register_geojson_endpoint() {
 
 function viable_get_filtered_geojson($request) {
     $code = $request['code'];
-    $gpkg_path = VIABLE_PATH . 'assets/data/viable.gpkg';
+    $gpkg_path = VIABLE_PATH . 'data/viable.gpkg';
 
     if (!file_exists($gpkg_path)) {
         return new WP_Error('not_found', 'GeoPackage file not found', ['status' => 404]);

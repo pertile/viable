@@ -60,7 +60,11 @@ function viable_add_category_map($content) {
     ob_start();
     ?>
     
-    <div id="viable-category-map" data-category-id="<?= esc_attr($category_id) ?>" style="height: 500px; width: 100%; margin-bottom: 30px;"></div>
+    <div id="viable-category-map" 
+         data-category-id="<?= esc_attr($category_id) ?>" 
+         data-rest-url="<?= esc_url(rest_url('viable/v1/category-projects/')) ?>"
+         style="height: 500px; width: 100%; margin-bottom: 30px;">
+    </div>
     
     <div class="viable-category-listings">
         <div class="viable-category-column viable-posts-column">

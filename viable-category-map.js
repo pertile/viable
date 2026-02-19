@@ -26,7 +26,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }).addTo(map);
     
     // Cargar proyectos de la categoría
-    fetch(`/wp-json/viable/v1/category-projects/${categoryId}`)
+    const restUrl = mapContainer.dataset.restUrl || '/wp-json/viable/v1/category-projects/';
+    
+    fetch(`${restUrl}${categoryId}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
