@@ -125,6 +125,8 @@ add_action( 'acf/include_fields', function() {
 				'Colectoras' => 'Colectoras',
 				'Ampliación carriles' => 'Ampliación carriles',
 				'Puente' => 'Puente',
+				'Rotonda' => 'Rotonda',
+				'Túnel' => 'Túnel',
 			),
 			'default_value' => 'Pavimentación',
 			'return_format' => 'value',
