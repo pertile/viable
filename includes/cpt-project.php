@@ -43,7 +43,7 @@ add_action('wp_enqueue_scripts', function () {
         if (!$code) {
             return;
         }
-    } elseif (!is_category()) {
+    } else {
         return;
     }
     
@@ -68,15 +68,5 @@ add_action('wp_enqueue_scripts', function () {
         true
     );
     
-    // Cargar script específico para páginas de categoría
-    if (is_category()) {
-        wp_enqueue_script(
-            'viable-category-map',
-            VIABLE_URL . 'viable-category-map.js',
-            ['leaflet'],
-            '1.0',
-            true
-        );
-    }
 });
 

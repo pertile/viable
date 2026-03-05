@@ -352,6 +352,81 @@
   color: #333;
 }
 
+.viable-project-description h3 a {
+  color: #0066cc;
+  text-decoration: none;
+}
+
+.viable-project-description h3 a:hover {
+  text-decoration: underline;
+}
+
+/* Multi-proyecto: secciones colapsables */
+.viable-project-collapsible {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+}
+
+.viable-project-collapsible + .viable-project-collapsible {
+  border-top: 2px solid #e9ecef;
+}
+
+.project-desc-preview p:last-child {
+  margin-bottom: 0.5rem;
+}
+
+/* Metadata de proyecto en listado multi-proyecto */
+.project-collapsible-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.4rem 0 0.75rem;
+  font-size: 0.85rem;
+}
+
+.project-type-tag,
+.project-length-tag,
+.project-state-tag {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: 3px;
+  background: #e9ecef;
+  color: #555;
+  font-weight: 500;
+}
+
+.project-state-tag.state-tag-en-obras     { background: #d1ecf1; color: #0c5460; }
+.project-state-tag.state-tag-adjudicado   { background: #fff3cd; color: #856404; }
+.project-state-tag.state-tag-finalizado   { background: #d4edda; color: #155724; }
+.project-state-tag.state-tag-paralizado   { background: #f8d7da; color: #721c24; }
+.project-state-tag.state-tag-en-licitacion{ background: #e2d9f3; color: #4a2c7a; }
+
+.viable-ver-mas-btn,
+a.viable-ver-mas-btn {
+  display: inline-block !important;
+  background: none !important;
+  border: none !important;
+  color: #0066cc !important;
+  font-size: 0.95rem !important;
+  cursor: pointer !important;
+  padding: 0.3rem 0 !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+  transition: color 0.15s;
+  box-shadow: none !important;
+}
+
+.viable-ver-mas-btn:hover,
+a.viable-ver-mas-btn:hover {
+  color: #004a99 !important;
+  text-decoration: underline !important;
+}
+
+/* Layout multi-proyecto: sin float lateral */
+.viable-multi-project {
+  margin-right: 0;
+}
+
 .viable-tender-documents {
   margin-top: 2rem;
   padding-top: 1.5rem;
@@ -578,5 +653,136 @@
 
 .viable-projects-column h3 {
   border-bottom-color: #00a32a;
+}
+
+/* ============================================================
+   [viable_map] – Mapa universal (shortcode)
+   ============================================================ */
+
+.viable-map-universal {
+  position: relative;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.viable-map-universal.viable-map-empty::after {
+  content: 'No hay datos de trazado para los filtros seleccionados';
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.85);
+  z-index: 800;
+  color: #999;
+  font-size: 0.95rem;
+  pointer-events: none;
+}
+
+/* ── Leyenda ──────────────────────────────────────────────── */
+.viable-map-legend {
+  background: rgba(255,255,255,0.95);
+  padding: 0.6rem 0.8rem;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  font-size: 0.8rem;
+  line-height: 1.6;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.viable-map-legend strong {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-size: 0.85rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.legend-swatch {
+  display: inline-block;
+  width: 14px;
+  height: 4px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  border: 1px solid rgba(0,0,0,0.15);
+}
+
+/* ── Panel de filtros ─────────────────────────────────────── */
+.viable-map-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+  padding: 0.75rem 1rem;
+  background: #f8f9fa;
+  border: 1px solid #ddd;
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+  margin-bottom: 0;
+}
+
+.viable-map-filters + .viable-map-universal {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.viable-map-filters .filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.viable-map-filters label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.viable-map-filters select {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  font-size: 0.85rem;
+  background: #fff;
+  min-width: 140px;
+}
+
+.viable-map-filters .filter-apply {
+  padding: 0.4rem 1rem;
+  background: #0073aa;
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s;
+  display: none; /* oculto, los selects filtran al cambiar */
+}
+
+.viable-map-filters .filter-apply:hover {
+  background: #005177;
+}
+
+@media (max-width: 600px) {
+  .viable-map-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .viable-map-filters select {
+    min-width: 0;
+    width: 100%;
+  }
 }
 

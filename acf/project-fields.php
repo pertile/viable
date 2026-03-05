@@ -10,11 +10,11 @@ add_action( 'acf/include_fields', function() {
 	'fields' => array(
 		array(
 			'key' => 'field_697e0e66a6994',
-			'label' => 'Obra',
+			'label' => 'Obras',
 			'name' => 'related_projects',
 			'aria-label' => '',
 			'type' => 'post_object',
-			'instructions' => '',
+			'instructions' => 'Seleccioná uno o más proyectos de obra vinculados a esta nota.',
 			'required' => 0,
 			'conditional_logic' => 0,
 			'wrapper' => array(
@@ -28,8 +28,8 @@ add_action( 'acf/include_fields', function() {
 			'post_status' => '',
 			'taxonomy' => '',
 			'return_format' => 'object',
-			'multiple' => 0,
-			'allow_null' => 0,
+			'multiple' => 1,
+			'allow_null' => 1,
 			'allow_in_bindings' => 0,
 			'bidirectional' => 0,
 			'ui' => 1,

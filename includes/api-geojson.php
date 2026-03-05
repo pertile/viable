@@ -30,11 +30,24 @@ function viable_register_geojson_endpoint() {
             ]
         ]
     ]);
+
+    // Endpoint flexible para el shortcode [viable_map]
+    register_rest_route('viable/v1', '/map-projects', [
+        'methods' => 'GET',
+        'callback' => 'viable_get_map_projects',
+        'permission_callback' => '__return_true',
+        'args' => [
+            'codes'    => ['required' => false, 'type' => 'string'],
+            'category' => ['required' => false, 'type' => 'string'],
+            'type'     => ['required' => false, 'type' => 'string'],
+            'state'    => ['required' => false, 'type' => 'string'],
+        ]
+    ]);
 }
 
 function viable_get_filtered_geojson($request) {
     $code = $request['code'];
-    $gpkg_path = VIABLE_PATH . 'data/viable.gpkg';
+    $gpkg_path = VIABLE_PATH . 'assets/data/viable.gpkg';
 
     if (!file_exists($gpkg_path)) {
         return new WP_Error('not_found', 'GeoPackage file not found', ['status' => 404]);
@@ -389,5 +402,141 @@ function viable_get_category_projects($request) {
         'features' => $features,
         'debug' => $debug_info
     ];
+}
+
+/**
+ * Endpoint flexible: /viable/v1/map-projects
+ * Parámetros opcionales: codes, category, type, state
+ * Sin parámetros devuelve todos los proyectos con geometría.
+ */
+function viable_get_map_projects($request) {
+    $codes_param    = $request->get_param('codes');
+    $category_param = $request->get_param('category');
+    $type_param     = $request->get_param('type');
+    $state_param    = $request->get_param('state');
+
+    // --- Construir WP_Query según filtros ---
+    $meta_query = [];
+
+    if ($type_param) {
+        $meta_query[] = [
+            'key'     => 'type',
+            'value'   => $type_param,
+            'compare' => '='
+        ];
+    }
+    if ($state_param) {
+        $meta_query[] = [
+            'key'     => 'state',
+            'value'   => $state_param,
+            'compare' => '='
+        ];
+    }
+
+    $query_args = [
+        'post_type'      => 'project',
+        'post_status'    => 'publish',
+        'posts_per_page' => -1,
+    ];
+    if (!empty($meta_query)) {
+        $query_args['meta_query'] = $meta_query;
+    }
+
+    $projects = new WP_Query($query_args);
+
+    if (!$projects->have_posts()) {
+        return rest_ensure_response([
+            'type'     => 'FeatureCollection',
+            'features' => []
+        ]);
+    }
+
+    // Conjuntos de filtros solicitados
+    $requested_codes = null;
+    if ($codes_param) {
+        $requested_codes = array_map('trim', explode(',', $codes_param));
+    }
+
+    $requested_category = null;
+    if ($category_param) {
+        if (is_numeric($category_param)) {
+            $requested_category = (int) $category_param;
+        } else {
+            $term = get_term_by('slug', $category_param, 'category');
+            $requested_category = $term ? $term->term_id : null;
+        }
+    }
+
+    // Abrir GeoPackage
+    $gpkg_path = VIABLE_PATH . 'assets/data/viable.gpkg';
+    if (!file_exists($gpkg_path)) {
+        return new WP_Error('not_found', 'GeoPackage file not found', ['status' => 404]);
+    }
+    $db = new SQLite3($gpkg_path, SQLITE3_OPEN_READONLY);
+
+    $tables_result = $db->query("SELECT table_name FROM gpkg_contents WHERE data_type = 'features' LIMIT 1");
+    $table_row = $tables_result->fetchArray(SQLITE3_ASSOC);
+    if (!$table_row) {
+        $db->close();
+        return new WP_Error('no_features', 'No feature tables found', ['status' => 404]);
+    }
+    $table_name = $table_row['table_name'];
+
+    $features = [];
+
+    while ($projects->have_posts()) {
+        $projects->the_post();
+        $pid  = get_the_ID();
+        $code = get_field('code', $pid);
+
+        if (!$code) continue;
+
+        // Filtro por codes específicos
+        if ($requested_codes && !in_array($code, $requested_codes)) continue;
+
+        // Filtro por categoría (campo regions)
+        if ($requested_category) {
+            $regions = get_field('regions', $pid);
+            if (!$regions) continue;
+            $region_ids = is_array($regions) ? $regions : [$regions];
+            $region_ids = array_map(function($r) {
+                return is_object($r) ? $r->term_id : (is_array($r) ? $r['term_id'] : (int)$r);
+            }, $region_ids);
+            if (!in_array($requested_category, $region_ids)) continue;
+        }
+
+        // Buscar geometría
+        $stmt = $db->prepare("SELECT * FROM {$table_name} WHERE code = :code");
+        $stmt->bindValue(':code', $code, SQLITE3_TEXT);
+        $result = $stmt->execute();
+
+        while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+            $geom_blob = $row['geometry'] ?? $row['geom'] ?? null;
+            if (!$geom_blob) continue;
+            $geometry = viable_wkb_to_geojson($geom_blob);
+            if (!$geometry) continue;
+
+            $features[] = [
+                'type'       => 'Feature',
+                'properties' => [
+                    'code'  => $code,
+                    'name'  => get_the_title($pid),
+                    'url'   => get_permalink($pid),
+                    'state' => get_field('state', $pid),
+                    'type'  => get_field('type', $pid),
+                    'tramo' => $row['tramo'] ?? ''
+                ],
+                'geometry'   => $geometry
+            ];
+        }
+    }
+
+    wp_reset_postdata();
+    $db->close();
+
+    return rest_ensure_response([
+        'type'     => 'FeatureCollection',
+        'features' => $features
+    ]);
 }
 

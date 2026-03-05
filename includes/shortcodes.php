@@ -7,108 +7,41 @@ function viable_project_infobox_shortcode($atts) {
     if (!is_singular('post')) {
         return '';
     }
-    
-    $projects = get_field('related_projects');
-    if (!$projects) {
+
+    $projects = viable_get_related_projects();
+    if (empty($projects)) {
         return '';
     }
-    
-    $project = is_array($projects) ? $projects[0] : $projects;
-    $pid = $project->ID;
-    
-    // Obtener todos los datos del proyecto
-    $type        = get_field('type', $pid);
-    $duplication_type = get_field('duplication_type', $pid);
-    $name        = get_the_title($pid);
-    $short_desc  = get_field('short_description', $pid);
-    $length      = get_field('length', $pid);
-    $state       = get_field('state', $pid);
-    $progress    = get_field('progress', $pid);
-    $progress_updated_on = get_field('progress_updated_on', $pid);
-    $end_date    = get_field('end_date', $pid);
-    $duration    = get_field('duration', $pid);
-    $bid_date    = get_field('bid_date', $pid);
-    $award_date  = get_field('award_date', $pid);
-    $start_date  = get_field('start_date', $pid);
-    $tender_documents = get_field('tender_documents', $pid);
-    $code        = get_field('code', $pid);
-    $roads       = get_field('roads', $pid);
-    $regions     = get_field('regions', $pid);
-    $image       = get_field('image', $pid);
-    $map         = get_field('map', $pid);
-    
-    // Función helper para formatear fechas
-    $format_date = function($date_str) {
-        if (!$date_str) return null;
-        $months_es = [
-            1 => 'enero', 2 => 'febrero', 3 => 'marzo', 4 => 'abril',
-            5 => 'mayo', 6 => 'junio', 7 => 'julio', 8 => 'agosto',
-            9 => 'septiembre', 10 => 'octubre', 11 => 'noviembre', 12 => 'diciembre'
-        ];
-        $timestamp = strtotime($date_str);
-        if ($timestamp) {
-            $month_num = (int)date('n', $timestamp);
-            $year = date('Y', $timestamp);
-            return $months_es[$month_num] . ' ' . $year;
-        }
-        return $date_str;
-    };
-    
-    // Formatear fechas
-    $state_lower = strtolower($state);
-    if ($end_date && ($state_lower === 'en construcción' || $state_lower === 'finalizado')) {
-        $end_date = $format_date($end_date);
+
+    // Solo mostrar infobox si hay un solo proyecto
+    if (count($projects) > 1) {
+        return '';
     }
-    
-    if ($bid_date) $bid_date_formatted = $format_date($bid_date);
-    if ($award_date) $award_date_formatted = $format_date($award_date);
-    if ($start_date) $start_date_formatted = $format_date($start_date);
-    
-    // Determinar tipo a mostrar
-    if (strtolower($type) === 'duplicación' && $duplication_type) {
-        $type_display = $duplication_type;
-    } else {
-        $type_display = $type;
-    }
-    
-    // Procesar roads
-    $roads_text = '';
-    if ($roads && is_array($roads)) {
-        $road_names = array_map(function($term) {
-            if (is_object($term) && isset($term->name)) {
-                return $term->name;
-            } elseif (is_array($term) && isset($term['name'])) {
-                return $term['name'];
-            } elseif (is_numeric($term)) {
-                $term_obj = get_term($term);
-                return $term_obj && !is_wp_error($term_obj) ? $term_obj->name : '';
-            }
-            return $term;
-        }, $roads);
-        $roads_text = implode(', ', array_filter($road_names));
-    } elseif ($roads) {
-        $roads_text = is_numeric($roads) ? get_term($roads)->name : $roads;
-    }
-    
-    // Procesar regions
-    $regions_text = '';
-    if ($regions && is_array($regions)) {
-        $region_names = array_map(function($cat) {
-            if (is_object($cat) && isset($cat->name)) {
-                return $cat->name;
-            } elseif (is_array($cat) && isset($cat['name'])) {
-                return $cat['name'];
-            } elseif (is_numeric($cat)) {
-                $cat_obj = get_category($cat);
-                return $cat_obj && !is_wp_error($cat_obj) ? $cat_obj->name : '';
-            }
-            return $cat;
-        }, $regions);
-        $regions_text = implode('; ', array_filter($region_names));
-    } elseif ($regions) {
-        $regions_text = is_numeric($regions) ? get_category($regions)->name : $regions;
-    }
-    
+
+    $d = viable_get_project_data($projects[0]->ID);
+
+    // Extraer variables para el template
+    $pid          = $d['pid'];
+    $name         = $d['name'];
+    $type_display = $d['type_display'];
+    $short_desc   = $d['short_desc'];
+    $length       = $d['length'];
+    $state        = $d['state'];
+    $state_lower  = $d['state_lower'];
+    $progress     = $d['progress'];
+    $progress_updated_on = $d['progress_updated_on'];
+    $end_date     = $d['end_date'];
+    $duration     = $d['duration'];
+    $bid_date_formatted   = $d['bid_date_formatted'];
+    $award_date_formatted = $d['award_date_formatted'];
+    $start_date_formatted = $d['start_date_formatted'];
+    $tender_documents = $d['tender_documents'];
+    $code         = $d['code'];
+    $roads_text   = $d['roads_text'];
+    $regions_text = $d['regions_text'];
+    $image        = $d['image'];
+    $map          = $d['map'];
+
     ob_start();
     include(VIABLE_PATH . 'includes/project-sheet-template.php');
     return ob_get_clean();
@@ -151,4 +84,83 @@ class Viable_Project_Widget extends WP_Widget {
         <p>Este widget muestra automáticamente la ficha del proyecto relacionado en posts individuales.</p>
         <?php
     }
+}
+
+// ====================================================================
+// Shortcode [viable_map] — mapa flexible con filtros y leyenda
+// ====================================================================
+add_shortcode('viable_map', 'viable_map_shortcode');
+
+/**
+ * Uso:
+ *   [viable_map]                               → todos los proyectos
+ *   [viable_map codes="A1,B2"]                  → proyectos específicos
+ *   [viable_map category="5"]                   → por categoría (ID o slug)
+ *   [viable_map type="Duplicación"]             → por tipo de obra
+ *   [viable_map state="En obras"]               → por estado
+ *   [viable_map filters="true"]                 → panel de filtros interactivos
+ *   [viable_map legend="false"]                 → sin leyenda
+ *   [viable_map height="600px"]                 → altura personalizada
+ *   [viable_map expand="false"]                 → sin botón ampliar
+ *
+ * Atributos combinables: [viable_map category="5" state="En obras" legend="true" filters="true"]
+ */
+function viable_map_shortcode($atts) {
+    $atts = shortcode_atts([
+        'codes'    => '',
+        'category' => '',
+        'type'     => '',
+        'state'    => '',
+        'legend'   => 'true',
+        'filters'  => 'false',
+        'height'   => '500px',
+        'expand'   => 'true',
+    ], $atts, 'viable_map');
+
+    // Enqueue Leaflet + nuestro JS universal
+    wp_enqueue_style('leaflet', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');
+    wp_enqueue_script('leaflet', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js', [], null, true);
+    wp_enqueue_script('viable-map-universal', VIABLE_URL . 'viable-map-universal.js', ['leaflet'], '1.0', true);
+
+    // Datos para los filtros (valores posibles)
+    $filter_data = [];
+    if ($atts['filters'] === 'true') {
+        $filter_data['types'] = [
+            'Pavimentación', 'Apertura', 'Duplicación', 'Colectoras',
+            'Ampliación carriles', 'Puente', 'Rotonda', 'Túnel'
+        ];
+        $filter_data['states'] = [
+            'Proyecto', 'En licitación', 'Adjudicado', 'En obras', 'Paralizado', 'Finalizado'
+        ];
+        // Categorías existentes que tienen proyectos
+        $categories = get_categories(['hide_empty' => false]);
+        $filter_data['categories'] = array_map(function($cat) {
+            return ['id' => $cat->term_id, 'name' => $cat->name, 'slug' => $cat->slug];
+        }, $categories);
+    }
+
+    // ID único para múltiples mapas en la misma página
+    static $map_counter = 0;
+    $map_counter++;
+    $map_id = 'viable-map-universal-' . $map_counter;
+
+    ob_start();
+    ?>
+    <div id="<?= esc_attr($map_id) ?>"
+         class="viable-map-universal"
+         data-rest-url="<?= esc_url(rest_url('viable/v1/map-projects')) ?>"
+         data-codes="<?= esc_attr($atts['codes']) ?>"
+         data-category="<?= esc_attr($atts['category']) ?>"
+         data-type="<?= esc_attr($atts['type']) ?>"
+         data-state="<?= esc_attr($atts['state']) ?>"
+         data-legend="<?= esc_attr($atts['legend']) ?>"
+         data-filters="<?= esc_attr($atts['filters']) ?>"
+         data-expand="<?= esc_attr($atts['expand']) ?>"
+         <?php if ($atts['filters'] === 'true'): ?>
+         data-filter-options="<?= esc_attr(wp_json_encode($filter_data)) ?>"
+         <?php endif; ?>
+         style="height: <?= esc_attr($atts['height']) ?>;">
+    </div>
+    <?php
+    return ob_get_clean();
 }
