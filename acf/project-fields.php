@@ -544,3 +544,23 @@ add_action( 'acf/include_fields', function() {
 		'display_title' => '',
 	) );
 } );
+
+/**
+ * Limita el selector ACF "Regiones" a categorías hijas directas de la categoría padre "Regiones".
+ */
+add_filter( 'acf/fields/taxonomy/query/name=regions', function( $args, $field, $post_id ) {
+	$parent = viable_get_regions_parent_term();
+
+	if ( ! $parent ) {
+		// Si no existe la categoría contenedora, no mostrar opciones para evitar selecciones inválidas.
+		$args['include'] = array(0);
+		return $args;
+	}
+
+	$args['taxonomy'] = 'category';
+	$args['parent'] = (int) $parent->term_id;
+	$args['orderby'] = 'name';
+	$args['order'] = 'ASC';
+
+	return $args;
+}, 10, 3 );

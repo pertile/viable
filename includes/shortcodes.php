@@ -151,7 +151,7 @@ function viable_map_shortcode($atts) {
             ];
         }
         if (in_array('category', $enabled_filters)) {
-            $categories = get_categories(['hide_empty' => false]);
+            $categories = viable_get_region_categories(['hide_empty' => false]);
             $filter_data['categories'] = array_map(function($cat) {
                 return ['id' => $cat->term_id, 'name' => $cat->name, 'slug' => $cat->slug];
             }, $categories);
