@@ -717,12 +717,12 @@ a.viable-ver-mas-btn:hover {
   border: 1px solid rgba(0,0,0,0.15);
 }
 
-/* ── Panel de filtros ─────────────────────────────────────── */
+/* ── Panel de filtros (checkboxes) ───────────────────────── */
 .viable-map-filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
-  align-items: flex-end;
+  gap: 1rem;
+  align-items: flex-start;
   padding: 0.75rem 1rem;
   background: #f8f9fa;
   border: 1px solid #ddd;
@@ -739,50 +739,64 @@ a.viable-ver-mas-btn:hover {
 .viable-map-filters .filter-group {
   display: flex;
   flex-direction: column;
+  gap: 0.3rem;
+  min-width: 130px;
+}
+
+.viable-map-filters .filter-group-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.1rem;
+}
+
+.viable-map-filters .filter-checkboxes {
+  display: flex;
+  flex-direction: column;
   gap: 0.2rem;
 }
 
-.viable-map-filters label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #555;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+.viable-map-filters .filter-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  color: #333;
+  user-select: none;
 }
 
-.viable-map-filters select {
-  padding: 0.35rem 0.5rem;
-  border: 1px solid #ccc;
-  border-radius: 3px;
-  font-size: 0.85rem;
-  background: #fff;
-  min-width: 140px;
+.viable-map-filters .filter-checkbox-row input[type=checkbox] {
+  margin: 0;
+  cursor: pointer;
+  accent-color: #0073aa;
 }
 
 .viable-map-filters .filter-apply {
-  padding: 0.4rem 1rem;
-  background: #0073aa;
-  color: #fff;
-  border: none;
-  border-radius: 3px;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: background 0.15s;
-  display: none; /* oculto, los selects filtran al cambiar */
+  display: none; /* se aplica al onChange automáticamente */
 }
 
-.viable-map-filters .filter-apply:hover {
-  background: #005177;
+/* Filtros dentro del modal */
+.viable-map-modal-filters {
+  padding: 0.6rem 1rem;
+  background: #f8f9fa;
+  border-bottom: 1px solid #ddd;
+  flex-shrink: 0;
+}
+
+.viable-map-modal-filters .viable-map-filters {
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  gap: 1.5rem;
 }
 
 @media (max-width: 600px) {
   .viable-map-filters {
     flex-direction: column;
-    align-items: stretch;
-  }
-  .viable-map-filters select {
-    min-width: 0;
-    width: 100%;
   }
 }
 

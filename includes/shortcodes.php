@@ -112,31 +112,49 @@ function viable_map_shortcode($atts) {
         'type'     => '',
         'state'    => '',
         'legend'   => 'true',
-        'filters'  => 'false',
+        'filters'  => '',      // '' = ninguno; 'state,type,category' o 'true' = todos
         'height'   => '500px',
         'expand'   => 'true',
     ], $atts, 'viable_map');
 
-    // Enqueue Leaflet + nuestro JS universal
+    // Normalizar 'true' al conjunto completo de filtros
+    $filters_val = $atts['filters'];
+    if ($filters_val === 'true' || $filters_val === '1') {
+        $filters_val = 'state,type,category';
+    }
+    // Ignorar 'false' / '0'
+    if ($filters_val === 'false' || $filters_val === '0') {
+        $filters_val = '';
+    }
+    $enabled_filters = $filters_val
+        ? array_filter(array_map('trim', explode(',', $filters_val)))
+        : [];
+
+    // Enqueue Leaflet + JS universal
     wp_enqueue_style('leaflet', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');
     wp_enqueue_script('leaflet', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js', [], null, true);
-    wp_enqueue_script('viable-map-universal', VIABLE_URL . 'viable-map-universal.js', ['leaflet'], '1.0', true);
+    wp_enqueue_script('viable-map-universal', VIABLE_URL . 'viable-map-universal.js', ['leaflet'], '1.1', true);
 
-    // Datos para los filtros (valores posibles)
+    // Datos para los filtros (solo los solicitados)
     $filter_data = [];
-    if ($atts['filters'] === 'true') {
-        $filter_data['types'] = [
-            'Pavimentación', 'Apertura', 'Duplicación', 'Colectoras',
-            'Ampliación carriles', 'Puente', 'Rotonda', 'Túnel'
-        ];
-        $filter_data['states'] = [
-            'Proyecto', 'En licitación', 'Adjudicado', 'En obras', 'Paralizado', 'Finalizado'
-        ];
-        // Categorías existentes que tienen proyectos
-        $categories = get_categories(['hide_empty' => false]);
-        $filter_data['categories'] = array_map(function($cat) {
-            return ['id' => $cat->term_id, 'name' => $cat->name, 'slug' => $cat->slug];
-        }, $categories);
+    if (!empty($enabled_filters)) {
+        if (in_array('type', $enabled_filters)) {
+            $filter_data['types'] = [
+                'Pavimentación', 'Apertura', 'Duplicación', 'Calzada adicional',
+                'Ampliación de calzada', 'Puente', 'Rotonda', 'Túnel'
+            ];
+        }
+        if (in_array('state', $enabled_filters)) {
+            $filter_data['states'] = [
+                'Proyecto', 'En licitación', 'Adjudicado', 'En obras', 'Paralizado', 'Finalizado'
+            ];
+        }
+        if (in_array('category', $enabled_filters)) {
+            $categories = get_categories(['hide_empty' => false]);
+            $filter_data['categories'] = array_map(function($cat) {
+                return ['id' => $cat->term_id, 'name' => $cat->name, 'slug' => $cat->slug];
+            }, $categories);
+        }
     }
 
     // ID único para múltiples mapas en la misma página
@@ -154,9 +172,9 @@ function viable_map_shortcode($atts) {
          data-type="<?= esc_attr($atts['type']) ?>"
          data-state="<?= esc_attr($atts['state']) ?>"
          data-legend="<?= esc_attr($atts['legend']) ?>"
-         data-filters="<?= esc_attr($atts['filters']) ?>"
+         data-filters="<?= esc_attr($filters_val) ?>"
          data-expand="<?= esc_attr($atts['expand']) ?>"
-         <?php if ($atts['filters'] === 'true'): ?>
+         <?php if (!empty($filter_data)): ?>
          data-filter-options="<?= esc_attr(wp_json_encode($filter_data)) ?>"
          <?php endif; ?>
          style="height: <?= esc_attr($atts['height']) ?>;">

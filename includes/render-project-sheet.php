@@ -209,7 +209,44 @@ function viable_render_project_sheet($content) {
         $wrapped = '<div class="viable-post-content-wrapper">' . $content . '</div>';
         $wrapped .= '<div style="clear: both;"></div>';
 
-        return $sheet_html . $wrapped . $description_html;
+        // Buscar otros posts relacionados con este mismo proyecto (excluye el actual)
+        $pid_proj = $projects[0]->ID;
+        $related_posts = new WP_Query([
+            'post_type'      => 'post',
+            'post_status'    => 'publish',
+            'post__not_in'   => [get_the_ID()],
+            'meta_query'     => [
+                'relation' => 'OR',
+                ['key' => 'related_projects', 'value' => '"' . $pid_proj . '"', 'compare' => 'LIKE'],
+                ['key' => 'related_projects', 'value' => 'i:' . $pid_proj . ';', 'compare' => 'LIKE'],
+            ],
+            'orderby'        => 'date',
+            'order'          => 'DESC',
+            'posts_per_page' => -1,
+        ]);
+
+        $related_html = '';
+        if ($related_posts->have_posts()) {
+            ob_start();
+            ?>
+            <section class="related-posts-section">
+                <h3>Artículos relacionados</h3>
+                <div class="related-posts-list">
+                    <?php while ($related_posts->have_posts()): $related_posts->the_post(); ?>
+                        <article class="related-post-item">
+                            <h4><a href="<?= get_permalink() ?>"><?= get_the_title() ?></a></h4>
+                            <time class="post-date"><?= get_the_date('j \d\e F \d\e Y') ?></time>
+                            <div class="post-excerpt"><?= get_the_excerpt() ?></div>
+                        </article>
+                    <?php endwhile; ?>
+                </div>
+            </section>
+            <?php
+            wp_reset_postdata();
+            $related_html = ob_get_clean();
+        }
+
+        return $sheet_html . $wrapped . $description_html . $related_html;
     }
 
     // ── CASO 2: Múltiples proyectos → mapa + secciones colapsables ───
@@ -295,7 +332,7 @@ function viable_render_project_sheet($content) {
         ?>
         <section class="viable-project-description viable-project-collapsible">
             <h3>
-                <a href="<?= esc_url($d['url']) ?>"><?= esc_html($d['name']) ?></a>
+                <a href="<?= esc_url($d['url']) ?>"><?= esc_html($d['type_display'] ? $d['type_display'] . ': ' . $d['name'] : $d['name']) ?></a>
             </h3>
             <?php if ($d['type_display'] || $d['length'] || $d['state']): ?>
                 <p class="project-collapsible-meta">

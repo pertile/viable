@@ -1,6 +1,6 @@
 <section class="viable-project-sheet state-<?= esc_attr($state) ?>">
 
-    <h2><?= $type_display ? esc_html("$type_display – $name") : esc_html($name) ?></h2>
+    <h2><?= $type_display ? esc_html("$type_display: $name") : esc_html($name) ?></h2>
 
     <?php if ($short_desc): ?>
         <p class="project-summary"><?= esc_html($short_desc) ?></p>

@@ -76,9 +76,12 @@
       }).addTo(targetMap);
 
       // Popup
-      let popupHtml = `<strong>${feature.properties.name}</strong>`;
-      if (feature.properties.tramo) {
-        popupHtml += `<br><em>${feature.properties.tramo}</em>`;
+      const pTitle = feature.properties.type_display
+        ? `${feature.properties.type_display}: ${feature.properties.name}`
+        : feature.properties.name;
+      let popupHtml = `<strong>${pTitle}</strong>`;
+      if (feature.properties.short_description) {
+        popupHtml += `<br><em>${feature.properties.short_description}</em>`;
       }
       if (feature.properties.state) {
         popupHtml += `<br>Estado: ${feature.properties.state}`;
@@ -104,7 +107,6 @@
 
       let html = '<strong>Proyectos</strong>';
       entries.forEach(([code, color]) => {
-        // Buscar nombre amigable del último fetch
         const label = legend._labelMap ? (legend._labelMap[code] || code) : code;
         html += `<div class="legend-item"><span class="legend-swatch" style="background:${color}"></span> ${label}</div>`;
       });
@@ -112,6 +114,16 @@
       return div;
     };
     return legend;
+  }
+
+  function buildLabelMapFull(features) {
+    const map = {};
+    features.forEach(f => {
+      if (map[f.properties.code]) return;
+      const p = f.properties;
+      map[p.code] = p.type_display ? `${p.type_display}: ${p.name}` : p.name;
+    });
+    return map;
   }
 
   /** Construye la URL de la API con los filtros actuales */
@@ -124,7 +136,7 @@
   }
 
   /* ── Expand modal (reutilizable) ───────────────────────────── */
-  function addExpandButton(container, features, colorMap) {
+  function addExpandButton(container, features, colorMap, filterOptions, baseParams, restUrl) {
     const btn = document.createElement('button');
     btn.className = 'viable-map-expand-btn';
     btn.title = 'Ampliar mapa';
@@ -133,11 +145,11 @@
 
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      openModal(features, colorMap);
+      openModal(features, colorMap, filterOptions, baseParams, restUrl);
     });
   }
 
-  function openModal(features, colorMap) {
+  function openModal(features, colorMap, filterOptions, baseParams, restUrl) {
     const overlay = document.createElement('div');
     overlay.className = 'viable-map-modal-overlay';
 
@@ -162,16 +174,52 @@
       attribution: '\u00a9 OpenStreetMap contributors'
     }).addTo(bigMap);
 
-    const bigLayers = drawFeatures(bigMap, features, colorMap);
+    let modalFeatures = features;
+    let modalColorMap = colorMap;
+    let modalLayers = [];
+    let modalLegend = null;
 
-    // Leyenda en el modal
-    const legendCtrl = addLegend(bigMap, colorMap);
-    legendCtrl._labelMap = buildLabelMap(features);
-    legendCtrl.addTo(bigMap);
+    function renderModalFeatures(feat, cmap) {
+      modalLayers.forEach(l => bigMap.removeLayer(l));
+      if (modalLegend) { bigMap.removeControl(modalLegend); modalLegend = null; }
+      modalLayers = drawFeatures(bigMap, feat, cmap);
+      const lc = addLegend(bigMap, cmap);
+      lc._labelMap = buildLabelMap(feat);
+      lc.addTo(bigMap);
+      modalLegend = lc;
+      if (modalLayers.length) {
+        bigMap.fitBounds(L.featureGroup(modalLayers).getBounds(), { padding: [30, 30] });
+      }
+    }
 
-    if (bigLayers.length) {
-      const group = L.featureGroup(bigLayers);
-      bigMap.fitBounds(group.getBounds(), { padding: [30, 30] });
+    renderModalFeatures(modalFeatures, modalColorMap);
+
+    // Filtros en el modal (si los hay)
+    if (filterOptions && Object.keys(filterOptions).length && restUrl) {
+      const modalFiltersWrap = document.createElement('div');
+      modalFiltersWrap.className = 'viable-map-modal-filters';
+      modal.insertBefore(modalFiltersWrap, mapDiv);
+
+      // Crear un placeholder para que createFiltersPanel (que hace insertBefore)
+      // coloque el panel dentro del wrapper
+      const placeholder = document.createElement('div');
+      modalFiltersWrap.appendChild(placeholder);
+
+      createFiltersPanel(placeholder, filterOptions, async (filters) => {
+        const merged = { ...baseParams };
+        Object.entries(filters).forEach(([k, v]) => { if (v) merged[k] = v; });
+        const url = buildApiUrl(restUrl, merged);
+        try {
+          const resp = await fetch(url);
+          if (!resp.ok) return;
+          const gj = await resp.json();
+          const feat = gj.features || [];
+          const cmap = buildColorMap(feat);
+          renderModalFeatures(feat, cmap);
+        } catch(e) { console.error(e); }
+      });
+      // El panel queda antes del placeholder; limpiar placeholder
+      placeholder.remove();
     }
 
     const closeModal = () => {
@@ -186,78 +234,89 @@
   }
 
   function buildLabelMap(features) {
-    const map = {};
-    features.forEach(f => { if (!map[f.properties.code]) map[f.properties.code] = f.properties.name; });
-    return map;
+    return buildLabelMapFull(features);
   }
 
-  /* ── Filters panel ─────────────────────────────────────────── */
+  /* ── Filters panel (checkboxes multi-select) ───────────────── */
   function createFiltersPanel(container, options, onApply) {
     const panel = document.createElement('div');
     panel.className = 'viable-map-filters';
 
-    function makeSelect(label, name, items, valueFn, textFn) {
+    /** Lee todos los checkboxes del panel y devuelve { category, type, state } */
+    function collectFilters() {
+      const filters = {};
+      panel.querySelectorAll('.filter-group').forEach(group => {
+        const name = group.dataset.filterName;
+        const checked = [...group.querySelectorAll('input[type=checkbox]:checked')].map(cb => cb.value);
+        filters[name] = checked.join(',');
+      });
+      return filters;
+    }
+
+    function makeCheckboxGroup(label, name, items, valueFn, textFn) {
       const wrap = document.createElement('div');
       wrap.className = 'filter-group';
-      const lbl = document.createElement('label');
+      wrap.dataset.filterName = name;
+
+      const lbl = document.createElement('div');
+      lbl.className = 'filter-group-label';
       lbl.textContent = label;
-      const sel = document.createElement('select');
-      sel.name = name;
-      sel.innerHTML = '<option value="">Todos</option>';
-      items.forEach(item => {
-        const opt = document.createElement('option');
-        opt.value = valueFn(item);
-        opt.textContent = textFn(item);
-        sel.appendChild(opt);
-      });
       wrap.appendChild(lbl);
-      wrap.appendChild(sel);
+
+      const list = document.createElement('div');
+      list.className = 'filter-checkboxes';
+      items.forEach(item => {
+        const id = 'flt-' + name + '-' + String(valueFn(item)).replace(/\s+/g, '-');
+        const row = document.createElement('label');
+        row.className = 'filter-checkbox-row';
+        row.htmlFor = id;
+
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.id = id;
+        cb.value = valueFn(item);
+        cb.addEventListener('change', () => onApply(collectFilters()));
+
+        row.appendChild(cb);
+        row.appendChild(document.createTextNode(' ' + textFn(item)));
+        list.appendChild(row);
+      });
+      wrap.appendChild(list);
       return wrap;
     }
 
     if (options.categories && options.categories.length) {
-      panel.appendChild(makeSelect('Región', 'category', options.categories, c => c.id, c => c.name));
+      panel.appendChild(makeCheckboxGroup('Región', 'category', options.categories, c => c.id, c => c.name));
     }
     if (options.types && options.types.length) {
-      panel.appendChild(makeSelect('Tipo', 'type', options.types, t => t, t => t));
+      panel.appendChild(makeCheckboxGroup('Tipo de obra', 'type', options.types, t => t, t => t));
     }
     if (options.states && options.states.length) {
-      panel.appendChild(makeSelect('Estado', 'state', options.states, s => s, s => s));
+      panel.appendChild(makeCheckboxGroup('Estado', 'state', options.states, s => s, s => s));
     }
-
-    const applyBtn = document.createElement('button');
-    applyBtn.className = 'filter-apply';
-    applyBtn.textContent = 'Filtrar';
-    panel.appendChild(applyBtn);
-
-    applyBtn.addEventListener('click', () => {
-      const selects = panel.querySelectorAll('select');
-      const filters = {};
-      selects.forEach(s => { filters[s.name] = s.value; });
-      onApply(filters);
-    });
-
-    // También filtrar al cambiar los selects directamente
-    panel.querySelectorAll('select').forEach(sel => {
-      sel.addEventListener('change', () => {
-        const selects = panel.querySelectorAll('select');
-        const filters = {};
-        selects.forEach(s => { filters[s.name] = s.value; });
-        onApply(filters);
-      });
-    });
 
     container.parentNode.insertBefore(panel, container);
     return panel;
   }
 
+  /** Igual que createFiltersPanel, pero para el modal (clon independiente) */
+  function cloneFiltersPanelInto(sourceOptions, targetEl, onApply) {
+    return createFiltersPanel(targetEl, sourceOptions, onApply);
+  }
+
   /* ── Inicializar cada instancia ─────────────────────────────── */
 
   function initMapInstance(el) {
-    const restUrl   = el.dataset.restUrl;
+    const restUrl     = el.dataset.restUrl;
     const showLegend  = el.dataset.legend !== 'false';
-    const showFilters = el.dataset.filters === 'true';
+    const filtersVal  = el.dataset.filters || '';
+    const showFilters = filtersVal !== '' && filtersVal !== 'false';
     const showExpand  = el.dataset.expand !== 'false';
+
+    let filterOptions = {};
+    if (showFilters) {
+      try { filterOptions = JSON.parse(el.dataset.filterOptions || '{}'); } catch(e) {}
+    }
 
     // Parámetros iniciales (del shortcode)
     const baseParams = {
@@ -278,7 +337,6 @@
     let currentLegend = null;
     let currentFeatures = [];
     let currentColorMap = {};
-    let expandBtn = null;
 
     /** Carga (o recarga) los datos según params */
     async function loadData(params) {
@@ -326,24 +384,11 @@
           currentLegend = legendCtrl;
         }
 
-        // Botón expandir (solo una vez)
-        if (showExpand && !expandBtn) {
-          expandBtn = true; // flag
-          addExpandButton(el, features, colorMap);
-        }
-
-        // Actualizar referencia del expandBtn para nuevas features
-        if (showExpand && expandBtn) {
-          // Reemplazar listener del botón existente
+        // Botón expandir: siempre remplazar para actualizar las features actuales
+        if (showExpand) {
           const existingBtn = el.querySelector('.viable-map-expand-btn');
-          if (existingBtn) {
-            const newBtn = existingBtn.cloneNode(true);
-            existingBtn.parentNode.replaceChild(newBtn, existingBtn);
-            newBtn.addEventListener('click', (e) => {
-              e.stopPropagation();
-              openModal(currentFeatures, currentColorMap);
-            });
-          }
+          if (existingBtn) existingBtn.remove();
+          addExpandButton(el, currentFeatures, currentColorMap, filterOptions, baseParams, restUrl);
         }
 
       } catch (err) {
@@ -353,17 +398,9 @@
 
     // Filtros interactivos
     if (showFilters) {
-      let filterOptions = {};
-      try {
-        filterOptions = JSON.parse(el.dataset.filterOptions || '{}');
-      } catch (e) { /* ignore */ }
-
       createFiltersPanel(el, filterOptions, (filters) => {
-        // Mezclar con los parámetros base (los del shortcode son defaults)
         const merged = { ...baseParams };
-        Object.entries(filters).forEach(([k, v]) => {
-          if (v) merged[k] = v; // el filtro del usuario sobreescribe
-        });
+        Object.entries(filters).forEach(([k, v]) => { if (v) merged[k] = v; });
         loadData(merged);
       });
     }

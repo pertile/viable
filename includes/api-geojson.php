@@ -419,17 +419,19 @@ function viable_get_map_projects($request) {
     $meta_query = [];
 
     if ($type_param) {
+        $types = array_filter(array_map('trim', explode(',', $type_param)));
         $meta_query[] = [
             'key'     => 'type',
-            'value'   => $type_param,
-            'compare' => '='
+            'value'   => count($types) > 1 ? $types : $types[0],
+            'compare' => count($types) > 1 ? 'IN' : '='
         ];
     }
     if ($state_param) {
+        $states = array_filter(array_map('trim', explode(',', $state_param)));
         $meta_query[] = [
             'key'     => 'state',
-            'value'   => $state_param,
-            'compare' => '='
+            'value'   => count($states) > 1 ? $states : $states[0],
+            'compare' => count($states) > 1 ? 'IN' : '='
         ];
     }
 
@@ -516,15 +518,21 @@ function viable_get_map_projects($request) {
             $geometry = viable_wkb_to_geojson($geom_blob);
             if (!$geometry) continue;
 
+                $proj_type        = get_field('type', $pid);
+            $proj_dup_type   = get_field('duplication_type', $pid);
+            $proj_type_disp  = (strtolower($proj_type) === 'duplicación' && $proj_dup_type) ? $proj_dup_type : $proj_type;
+
             $features[] = [
                 'type'       => 'Feature',
                 'properties' => [
-                    'code'  => $code,
-                    'name'  => get_the_title($pid),
-                    'url'   => get_permalink($pid),
-                    'state' => get_field('state', $pid),
-                    'type'  => get_field('type', $pid),
-                    'tramo' => $row['tramo'] ?? ''
+                    'code'              => $code,
+                    'name'              => get_the_title($pid),
+                    'type_display'      => $proj_type_disp,
+                    'short_description' => get_field('short_description', $pid),
+                    'url'               => get_permalink($pid),
+                    'state'             => get_field('state', $pid),
+                    'type'              => $proj_type,
+                    'tramo'             => $row['tramo'] ?? ''
                 ],
                 'geometry'   => $geometry
             ];
