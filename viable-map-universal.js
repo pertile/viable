@@ -272,14 +272,24 @@
 
     wrap.appendChild(dropdown);
 
+    function normalizeText(v) {
+      return String(v || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+    }
+
     function makeOption(text, value) {
       const optLbl = document.createElement('label');
       optLbl.className = 'multiselect-option';
       const cb = document.createElement('input');
       cb.type = 'checkbox';
       cb.value = value;
+      const txt = document.createElement('span');
+      txt.className = 'multiselect-option-text';
+      txt.textContent = text;
       optLbl.appendChild(cb);
-      optLbl.appendChild(document.createTextNode('\u00a0' + text));
+      optLbl.appendChild(txt);
       optionsWrap.appendChild(optLbl);
       return cb;
     }
@@ -319,9 +329,9 @@
     });
 
     search.addEventListener('input', () => {
-      const q = search.value.trim().toLowerCase();
+      const q = normalizeText(search.value.trim());
       itemCbs.forEach(cb => {
-        const labelTextContent = cb.closest('label').textContent.toLowerCase();
+        const labelTextContent = normalizeText(cb.closest('label').textContent);
         cb.closest('label').style.display = !q || labelTextContent.includes(q) ? '' : 'none';
       });
       allCb.closest('label').style.display = !q ? '' : 'none';
