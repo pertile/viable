@@ -47,7 +47,7 @@ function viable_register_geojson_endpoint() {
 
 function viable_get_filtered_geojson($request) {
     $code = $request['code'];
-    $gpkg_path = VIABLE_PATH . 'assets/data/viable.gpkg';
+    $gpkg_path = VIABLE_PATH . 'data/viable.gpkg';
 
     if (!file_exists($gpkg_path)) {
         return new WP_Error('not_found', 'GeoPackage file not found', ['status' => 404]);
@@ -314,7 +314,7 @@ function viable_get_category_projects($request) {
         ];
     }
     
-    $gpkg_path = VIABLE_PATH . 'assets/data/viable.gpkg';
+    $gpkg_path = VIABLE_PATH . 'data/viable.gpkg';
     
     if (!file_exists($gpkg_path)) {
         return new WP_Error('not_found', 'GeoPackage file not found', ['status' => 404]);
@@ -459,18 +459,21 @@ function viable_get_map_projects($request) {
         $requested_codes = array_map('trim', explode(',', $codes_param));
     }
 
-    $requested_category = null;
+    $requested_categories = [];
     if ($category_param) {
-        if (is_numeric($category_param)) {
-            $requested_category = (int) $category_param;
-        } else {
-            $term = get_term_by('slug', $category_param, 'category');
-            $requested_category = $term ? $term->term_id : null;
+        $cat_vals = array_filter(array_map('trim', explode(',', $category_param)));
+        foreach ($cat_vals as $cv) {
+            if (is_numeric($cv)) {
+                $requested_categories[] = (int) $cv;
+            } else {
+                $term = get_term_by('slug', $cv, 'category');
+                if ($term) $requested_categories[] = $term->term_id;
+            }
         }
     }
 
     // Abrir GeoPackage
-    $gpkg_path = VIABLE_PATH . 'assets/data/viable.gpkg';
+    $gpkg_path = VIABLE_PATH . 'data/viable.gpkg';
     if (!file_exists($gpkg_path)) {
         return new WP_Error('not_found', 'GeoPackage file not found', ['status' => 404]);
     }
@@ -497,14 +500,36 @@ function viable_get_map_projects($request) {
         if ($requested_codes && !in_array($code, $requested_codes)) continue;
 
         // Filtro por categoría (campo regions)
-        if ($requested_category) {
+        if (!empty($requested_categories)) {
             $regions = get_field('regions', $pid);
             if (!$regions) continue;
             $region_ids = is_array($regions) ? $regions : [$regions];
             $region_ids = array_map(function($r) {
                 return is_object($r) ? $r->term_id : (is_array($r) ? $r['term_id'] : (int)$r);
             }, $region_ids);
-            if (!in_array($requested_category, $region_ids)) continue;
+            if (!array_intersect($requested_categories, $region_ids)) continue;
+        }
+
+        // Buscar última entrada relacionada a este proyecto
+        $latest_post_info = null;
+        $latest_q = new WP_Query([
+            'post_type'      => 'post',
+            'post_status'    => 'publish',
+            'posts_per_page' => 1,
+            'orderby'        => 'date',
+            'order'          => 'DESC',
+            'meta_query'     => [
+                'relation' => 'OR',
+                ['key' => 'related_projects', 'value' => '"' . $pid . '"', 'compare' => 'LIKE'],
+                ['key' => 'related_projects', 'value' => 'i:' . $pid . ';', 'compare' => 'LIKE'],
+            ],
+        ]);
+        if (!empty($latest_q->posts)) {
+            $lp = $latest_q->posts[0];
+            $latest_post_info = [
+                'title' => get_the_title($lp->ID),
+                'url'   => get_permalink($lp->ID),
+            ];
         }
 
         // Buscar geometría
@@ -518,7 +543,7 @@ function viable_get_map_projects($request) {
             $geometry = viable_wkb_to_geojson($geom_blob);
             if (!$geometry) continue;
 
-                $proj_type        = get_field('type', $pid);
+            $proj_type       = get_field('type', $pid);
             $proj_dup_type   = get_field('duplication_type', $pid);
             $proj_type_disp  = (strtolower($proj_type) === 'duplicación' && $proj_dup_type) ? $proj_dup_type : $proj_type;
 
@@ -532,7 +557,8 @@ function viable_get_map_projects($request) {
                     'url'               => get_permalink($pid),
                     'state'             => get_field('state', $pid),
                     'type'              => $proj_type,
-                    'tramo'             => $row['tramo'] ?? ''
+                    'tramo'             => $row['tramo'] ?? '',
+                    'last_post'         => $latest_post_info,
                 ],
                 'geometry'   => $geometry
             ];

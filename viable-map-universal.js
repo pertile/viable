@@ -200,12 +200,7 @@
       modalFiltersWrap.className = 'viable-map-modal-filters';
       modal.insertBefore(modalFiltersWrap, mapDiv);
 
-      // Crear un placeholder para que createFiltersPanel (que hace insertBefore)
-      // coloque el panel dentro del wrapper
-      const placeholder = document.createElement('div');
-      modalFiltersWrap.appendChild(placeholder);
-
-      createFiltersPanel(placeholder, filterOptions, async (filters) => {
+      createFiltersPanel(modalFiltersWrap, filterOptions, async (filters) => {
         const merged = { ...baseParams };
         Object.entries(filters).forEach(([k, v]) => { if (v) merged[k] = v; });
         const url = buildApiUrl(restUrl, merged);
@@ -218,8 +213,6 @@
           renderModalFeatures(feat, cmap);
         } catch(e) { console.error(e); }
       });
-      // El panel queda antes del placeholder; limpiar placeholder
-      placeholder.remove();
     }
 
     const closeModal = () => {
@@ -237,71 +230,128 @@
     return buildLabelMapFull(features);
   }
 
-  /* ── Filters panel (checkboxes multi-select) ───────────────── */
-  function createFiltersPanel(container, options, onApply) {
-    const panel = document.createElement('div');
-    panel.className = 'viable-map-filters';
+  /* ── Multi-select dropdown ──────────────────────────────────── */
+  function makeMultiSelect(labelText, name, items, valueFn, textFn, onChange) {
+    const wrap = document.createElement('div');
+    wrap.className = 'filter-group';
+    wrap.dataset.filterName = name;
 
-    /** Lee todos los checkboxes del panel y devuelve { category, type, state } */
-    function collectFilters() {
-      const filters = {};
-      panel.querySelectorAll('.filter-group').forEach(group => {
-        const name = group.dataset.filterName;
-        const checked = [...group.querySelectorAll('input[type=checkbox]:checked')].map(cb => cb.value);
-        filters[name] = checked.join(',');
+    const lbl = document.createElement('div');
+    lbl.className = 'filter-group-label';
+    lbl.textContent = labelText;
+    wrap.appendChild(lbl);
+
+    const trigger = document.createElement('div');
+    trigger.className = 'multiselect-trigger';
+    trigger.setAttribute('tabindex', '0');
+    trigger.setAttribute('role', 'combobox');
+    trigger.setAttribute('aria-expanded', 'false');
+
+    const triggerText = document.createElement('span');
+    triggerText.className = 'multiselect-text';
+    triggerText.textContent = 'Todas';
+    const triggerArrow = document.createElement('span');
+    triggerArrow.className = 'multiselect-arrow';
+    triggerArrow.innerHTML = '&#9662;';
+    trigger.appendChild(triggerText);
+    trigger.appendChild(triggerArrow);
+    wrap.appendChild(trigger);
+
+    const dropdown = document.createElement('div');
+    dropdown.className = 'multiselect-dropdown';
+    wrap.appendChild(dropdown);
+
+    function makeOption(text, value) {
+      const optLbl = document.createElement('label');
+      optLbl.className = 'multiselect-option';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.value = value;
+      optLbl.appendChild(cb);
+      optLbl.appendChild(document.createTextNode('\u00a0' + text));
+      dropdown.appendChild(optLbl);
+      return cb;
+    }
+
+    const allCb = makeOption('(Todas)', '__all__');
+    allCb.checked = true;
+    const itemCbs = items.map(item => makeOption(textFn(item), String(valueFn(item))));
+
+    function getValues() {
+      if (allCb.checked) return '';
+      return itemCbs.filter(cb => cb.checked).map(cb => cb.value).join(',');
+    }
+
+    function updateTrigger() {
+      const checked = itemCbs.filter(cb => cb.checked);
+      if (allCb.checked || checked.length === 0) {
+        if (!allCb.checked) allCb.checked = true;
+        triggerText.textContent = 'Todas';
+      } else if (checked.length === 1) {
+        triggerText.textContent = checked[0].closest('label').textContent.trim();
+      } else {
+        triggerText.textContent = checked.length + ' seleccionadas';
+      }
+    }
+
+    allCb.addEventListener('change', () => {
+      if (allCb.checked) itemCbs.forEach(cb => { cb.checked = false; });
+      updateTrigger();
+      onChange(getValues());
+    });
+    itemCbs.forEach(cb => {
+      cb.addEventListener('change', () => {
+        if (cb.checked) allCb.checked = false;
+        updateTrigger();
+        onChange(getValues());
       });
-      return filters;
+    });
+
+    let open = false;
+    function closeDropdown() {
+      open = false;
+      dropdown.classList.remove('multiselect-open');
+      trigger.setAttribute('aria-expanded', 'false');
     }
+    trigger.addEventListener('click', e => {
+      e.stopPropagation();
+      open = !open;
+      dropdown.classList.toggle('multiselect-open', open);
+      trigger.setAttribute('aria-expanded', String(open));
+    });
+    trigger.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); trigger.click(); }
+      if (e.key === 'Escape') closeDropdown();
+    });
+    document.addEventListener('click', e => {
+      if (!wrap.contains(e.target)) closeDropdown();
+    });
 
-    function makeCheckboxGroup(label, name, items, valueFn, textFn) {
-      const wrap = document.createElement('div');
-      wrap.className = 'filter-group';
-      wrap.dataset.filterName = name;
-
-      const lbl = document.createElement('div');
-      lbl.className = 'filter-group-label';
-      lbl.textContent = label;
-      wrap.appendChild(lbl);
-
-      const list = document.createElement('div');
-      list.className = 'filter-checkboxes';
-      items.forEach(item => {
-        const id = 'flt-' + name + '-' + String(valueFn(item)).replace(/\s+/g, '-');
-        const row = document.createElement('label');
-        row.className = 'filter-checkbox-row';
-        row.htmlFor = id;
-
-        const cb = document.createElement('input');
-        cb.type = 'checkbox';
-        cb.id = id;
-        cb.value = valueFn(item);
-        cb.addEventListener('change', () => onApply(collectFilters()));
-
-        row.appendChild(cb);
-        row.appendChild(document.createTextNode(' ' + textFn(item)));
-        list.appendChild(row);
-      });
-      wrap.appendChild(list);
-      return wrap;
-    }
-
-    if (options.categories && options.categories.length) {
-      panel.appendChild(makeCheckboxGroup('Región', 'category', options.categories, c => c.id, c => c.name));
-    }
-    if (options.types && options.types.length) {
-      panel.appendChild(makeCheckboxGroup('Tipo de obra', 'type', options.types, t => t, t => t));
-    }
-    if (options.states && options.states.length) {
-      panel.appendChild(makeCheckboxGroup('Estado', 'state', options.states, s => s, s => s));
-    }
-
-    container.parentNode.insertBefore(panel, container);
-    return panel;
+    return wrap;
   }
 
-  /** Igual que createFiltersPanel, pero para el modal (clon independiente) */
-  function cloneFiltersPanelInto(sourceOptions, targetEl, onApply) {
-    return createFiltersPanel(targetEl, sourceOptions, onApply);
+  /* ── Filters panel ──────────────────────────────────────────── */
+  function createFiltersPanel(parentContainer, options, onApply) {
+    const panel = document.createElement('div');
+    panel.className = 'viable-map-filters';
+    const current = { category: '', type: '', state: '' };
+    function apply() { onApply({ ...current }); }
+
+    if (options.categories && options.categories.length) {
+      panel.appendChild(makeMultiSelect('Región', 'category', options.categories,
+        c => c.id, c => c.name, v => { current.category = v; apply(); }));
+    }
+    if (options.types && options.types.length) {
+      panel.appendChild(makeMultiSelect('Tipo de obra', 'type', options.types,
+        t => t, t => t, v => { current.type = v; apply(); }));
+    }
+    if (options.states && options.states.length) {
+      panel.appendChild(makeMultiSelect('Estado', 'state', options.states,
+        s => s, s => s, v => { current.state = v; apply(); }));
+    }
+
+    parentContainer.appendChild(panel);
+    return panel;
   }
 
   /* ── Inicializar cada instancia ─────────────────────────────── */
@@ -312,6 +362,7 @@
     const filtersVal  = el.dataset.filters || '';
     const showFilters = filtersVal !== '' && filtersVal !== 'false';
     const showExpand  = el.dataset.expand !== 'false';
+    const showList    = el.dataset.list === 'true';
 
     let filterOptions = {};
     if (showFilters) {
@@ -325,6 +376,14 @@
       type:     el.dataset.type     || '',
       state:    el.dataset.state    || ''
     };
+
+    // Contenedor para el listado (si se solicitó)
+    let listContainer = null;
+    if (showList) {
+      listContainer = document.createElement('div');
+      listContainer.className = 'viable-project-list';
+      el.parentNode.insertBefore(listContainer, el.nextSibling);
+    }
 
     // Crear mapa Leaflet
     const map = L.map(el).setView([-34.6, -58.4], 6);
@@ -361,6 +420,7 @@
 
         if (features.length === 0) {
           el.classList.add('viable-map-empty');
+          if (showList && listContainer) listContainer.innerHTML = '';
           return;
         }
 
@@ -391,6 +451,11 @@
           addExpandButton(el, currentFeatures, currentColorMap, filterOptions, baseParams, restUrl);
         }
 
+        // Listado de proyectos
+        if (showList && listContainer) {
+          renderProjectList(listContainer, currentFeatures);
+        }
+
       } catch (err) {
         console.error('Viable Map Universal Error:', err);
       }
@@ -398,7 +463,9 @@
 
     // Filtros interactivos
     if (showFilters) {
-      createFiltersPanel(el, filterOptions, (filters) => {
+      const filtersWrap = document.createElement('div');
+      el.parentNode.insertBefore(filtersWrap, el);
+      createFiltersPanel(filtersWrap, filterOptions, (filters) => {
         const merged = { ...baseParams };
         Object.entries(filters).forEach(([k, v]) => { if (v) merged[k] = v; });
         loadData(merged);

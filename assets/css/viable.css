@@ -427,6 +427,70 @@ a.viable-ver-mas-btn:hover {
   margin-right: 0;
 }
 
+/* ── Listado de proyectos (shortcode list="true") ────────── */
+.viable-project-list {
+  margin-top: 1.5rem;
+}
+
+.viable-project-list-item {
+  padding: 1rem 0;
+  border-top: 1px solid #e9ecef;
+}
+
+.viable-project-list-item:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.project-list-title {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+}
+
+.project-list-title a {
+  color: #0066cc;
+  text-decoration: none;
+}
+
+.project-list-title a:hover {
+  text-decoration: underline;
+}
+
+.project-list-desc {
+  margin: 0 0 0.5rem;
+  color: #555;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.project-list-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.project-list-last-post {
+  color: #555;
+}
+
+.project-list-last-post a {
+  color: #0066cc;
+  text-decoration: none;
+}
+
+.project-list-last-post a:hover {
+  text-decoration: underline;
+}
+
+.viable-list-empty {
+  color: #999;
+  font-style: italic;
+  margin: 0.75rem 0;
+}
+
+/* ── Tender documents ────────────────────────────────── */
 .viable-tender-documents {
   margin-top: 2rem;
   padding-top: 1.5rem;

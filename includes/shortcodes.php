@@ -112,9 +112,10 @@ function viable_map_shortcode($atts) {
         'type'     => '',
         'state'    => '',
         'legend'   => 'true',
-        'filters'  => '',      // '' = ninguno; 'state,type,category' o 'true' = todos
+        'filters'  => '',
         'height'   => '500px',
         'expand'   => 'true',
+        'list'     => 'false',
     ], $atts, 'viable_map');
 
     // Normalizar 'true' al conjunto completo de filtros
@@ -174,6 +175,7 @@ function viable_map_shortcode($atts) {
          data-legend="<?= esc_attr($atts['legend']) ?>"
          data-filters="<?= esc_attr($filters_val) ?>"
          data-expand="<?= esc_attr($atts['expand']) ?>"
+         data-list="<?= esc_attr($atts['list']) ?>"
          <?php if (!empty($filter_data)): ?>
          data-filter-options="<?= esc_attr(wp_json_encode($filter_data)) ?>"
          <?php endif; ?>
