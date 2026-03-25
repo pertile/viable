@@ -3,14 +3,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (!el) return;
 
   const projectCode = el.dataset.code;
+  const restBase = (el.dataset.restUrl || '').replace(/\/$/, '');
 
   if (!projectCode) {
     console.error('Viable Map: Missing project code');
     return;
   }
 
-  // Construir URL del endpoint REST API
-  const apiUrl = `${window.location.origin}/wp-json/viable/v1/geojson/${encodeURIComponent(projectCode)}`;
+  // Construir URL del endpoint REST API (usa rest_url para soportar subdirectorios)
+  const apiUrl = restBase
+    ? `${restBase}/${encodeURIComponent(projectCode)}`
+    : `${window.location.origin}/wp-json/viable/v1/geojson/${encodeURIComponent(projectCode)}`;
 
   try {
     // Cargar geojson filtrado desde el servidor

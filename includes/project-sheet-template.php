@@ -119,6 +119,7 @@
     <?php if ($code): ?>
         <div id="viable-map" 
              data-code="<?= esc_attr($code) ?>" 
+               data-rest-url="<?= esc_url(rest_url('viable/v1/geojson')) ?>"
              style="height: 300px; width: 100%;">
         </div>
     <?php elseif ($map): ?>

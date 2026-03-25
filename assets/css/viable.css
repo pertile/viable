@@ -781,7 +781,7 @@ a.viable-ver-mas-btn:hover {
   border: 1px solid rgba(0,0,0,0.15);
 }
 
-/* ── Panel de filtros (checkboxes) ───────────────────────── */
+/* ── Panel de filtros (multi-select dropdown) ────────────── */
 .viable-map-filters {
   display: flex;
   flex-wrap: wrap;
@@ -801,10 +801,11 @@ a.viable-ver-mas-btn:hover {
 }
 
 .viable-map-filters .filter-group {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
-  min-width: 130px;
+  min-width: 180px;
 }
 
 .viable-map-filters .filter-group-label {
@@ -816,30 +817,89 @@ a.viable-ver-mas-btn:hover {
   margin-bottom: 0.1rem;
 }
 
-.viable-map-filters .filter-checkboxes {
+.multiselect-trigger {
   display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  height: 36px;
+  padding: 0 0.7rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  color: #333;
+  font-size: 0.9rem;
 }
 
-.viable-map-filters .filter-checkbox-row {
+.multiselect-trigger:focus,
+.multiselect-trigger:focus-visible {
+  outline: none;
+  border-color: #0073aa;
+  box-shadow: 0 0 0 2px rgba(0, 115, 170, 0.2);
+}
+
+.multiselect-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.multiselect-arrow {
+  font-size: 0.75rem;
+  color: #666;
+}
+
+.multiselect-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  width: 100%;
+  max-height: 260px;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  background: #fff;
+  z-index: 1001;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
+}
+
+.multiselect-dropdown.multiselect-open {
+  display: block;
+}
+
+.multiselect-search {
+  width: calc(100% - 1rem);
+  margin: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid #d8dde3;
+  border-radius: 4px;
+  font-size: 0.86rem;
+}
+
+.multiselect-options {
+  max-height: 190px;
+  overflow-y: auto;
+  padding-bottom: 0.2rem;
+}
+
+.multiselect-option {
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.85rem;
-  cursor: pointer;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.86rem;
   color: #333;
-  user-select: none;
-}
-
-.viable-map-filters .filter-checkbox-row input[type=checkbox] {
-  margin: 0;
   cursor: pointer;
-  accent-color: #0073aa;
 }
 
-.viable-map-filters .filter-apply {
-  display: none; /* se aplica al onChange automáticamente */
+.multiselect-option:hover {
+  background: #f4f7fa;
+}
+
+.multiselect-option input[type=checkbox] {
+  margin: 0;
+  accent-color: #0073aa;
 }
 
 /* Filtros dentro del modal */

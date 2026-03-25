@@ -70,6 +70,7 @@ add_action( 'acf/include_fields', function() {
 			'type' => 'text',
 			'instructions' => '',
 			'required' => 1,
+			'menu_order' => 1,
 			'conditional_logic' => 0,
 			'wrapper' => array(
 				'width' => '',
@@ -91,6 +92,7 @@ add_action( 'acf/include_fields', function() {
 			'type' => 'text',
 			'instructions' => '',
 			'required' => 1,
+			'menu_order' => 2,
 			'conditional_logic' => 0,
 			'wrapper' => array(
 				'width' => '',
@@ -112,6 +114,7 @@ add_action( 'acf/include_fields', function() {
 			'type' => 'select',
 			'instructions' => '',
 			'required' => 0,
+			'menu_order' => 3,
 			'conditional_logic' => 0,
 			'wrapper' => array(
 				'width' => '',
@@ -147,6 +150,7 @@ add_action( 'acf/include_fields', function() {
 			'type' => 'select',
 			'instructions' => '',
 			'required' => 0,
+			'menu_order' => 4,
 			'conditional_logic' => array(
 				array(
 					array(
@@ -185,6 +189,7 @@ add_action( 'acf/include_fields', function() {
 			'type' => 'wysiwyg',
 			'instructions' => '',
 			'required' => 0,
+			'menu_order' => 10,
 			'conditional_logic' => 0,
 			'wrapper' => array(
 				'width' => '',
@@ -206,6 +211,7 @@ add_action( 'acf/include_fields', function() {
 			'type' => 'select',
 			'instructions' => '',
 			'required' => 1,
+			'menu_order' => 7,
 			'conditional_logic' => 0,
 			'wrapper' => array(
 				'width' => '',
@@ -239,6 +245,7 @@ add_action( 'acf/include_fields', function() {
 			'type' => 'number',
 			'instructions' => '',
 			'required' => 0,
+			'menu_order' => 8,
 			'conditional_logic' => 0,
 			'wrapper' => array(
 				'width' => '',
@@ -262,6 +269,7 @@ add_action( 'acf/include_fields', function() {
 			'type' => 'date_picker',
 			'instructions' => '',
 			'required' => 0,
+			'menu_order' => 15,
 			'conditional_logic' => 0,
 			'wrapper' => array(
 				'width' => '',
@@ -282,6 +290,7 @@ add_action( 'acf/include_fields', function() {
 			'type' => 'number',
 			'instructions' => '',
 			'required' => 0,
+			'menu_order' => 5,
 			'conditional_logic' => 0,
 			'wrapper' => array(
 				'width' => '',
@@ -305,6 +314,7 @@ add_action( 'acf/include_fields', function() {
 			'type' => 'text',
 			'instructions' => '',
 			'required' => 0,
+			'menu_order' => 6,
 			'conditional_logic' => 0,
 			'wrapper' => array(
 				'width' => '',
@@ -326,6 +336,7 @@ add_action( 'acf/include_fields', function() {
 			'type' => 'date_picker',
 			'instructions' => '',
 			'required' => 0,
+			'menu_order' => 14,
 			'conditional_logic' => 0,
 			'wrapper' => array(
 				'width' => '',
@@ -346,6 +357,7 @@ add_action( 'acf/include_fields', function() {
 			'type' => 'date_picker',
 			'instructions' => '',
 			'required' => 0,
+			'menu_order' => 12,
 			'conditional_logic' => 0,
 			'wrapper' => array(
 				'width' => '',
@@ -366,6 +378,7 @@ add_action( 'acf/include_fields', function() {
 			'type' => 'date_picker',
 			'instructions' => '',
 			'required' => 0,
+			'menu_order' => 13,
 			'conditional_logic' => 0,
 			'wrapper' => array(
 				'width' => '',
@@ -386,6 +399,7 @@ add_action( 'acf/include_fields', function() {
 			'type' => 'taxonomy',
 			'instructions' => '',
 			'required' => 1,
+			'menu_order' => 17,
 			'conditional_logic' => 0,
 			'wrapper' => array(
 				'width' => '',
@@ -413,6 +427,7 @@ add_action( 'acf/include_fields', function() {
 			'type' => 'taxonomy',
 			'instructions' => '',
 			'required' => 0,
+			'menu_order' => 16,
 			'conditional_logic' => 0,
 			'wrapper' => array(
 				'width' => '',
@@ -440,6 +455,7 @@ add_action( 'acf/include_fields', function() {
 			'type' => 'image',
 			'instructions' => '',
 			'required' => 0,
+			'menu_order' => 18,
 			'conditional_logic' => 0,
 			'wrapper' => array(
 				'width' => '',
@@ -466,6 +482,7 @@ add_action( 'acf/include_fields', function() {
 			'type' => 'image',
 			'instructions' => '',
 			'required' => 0,
+			'menu_order' => 19,
 			'conditional_logic' => 0,
 			'wrapper' => array(
 				'width' => '',
@@ -492,6 +509,7 @@ add_action( 'acf/include_fields', function() {
 			'type' => 'text',
 			'instructions' => '',
 			'required' => 0,
+			'menu_order' => 11,
 			'conditional_logic' => 0,
 			'wrapper' => array(
 				'width' => '',
@@ -513,6 +531,7 @@ add_action( 'acf/include_fields', function() {
 			'type' => 'date_picker',
 			'instructions' => '',
 			'required' => 0,
+			'menu_order' => 9,
 			'conditional_logic' => 0,
 			'wrapper' => array(
 				'width' => '',

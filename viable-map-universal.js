@@ -259,6 +259,17 @@
 
     const dropdown = document.createElement('div');
     dropdown.className = 'multiselect-dropdown';
+
+    const search = document.createElement('input');
+    search.type = 'text';
+    search.className = 'multiselect-search';
+    search.placeholder = 'Buscar...';
+    dropdown.appendChild(search);
+
+    const optionsWrap = document.createElement('div');
+    optionsWrap.className = 'multiselect-options';
+    dropdown.appendChild(optionsWrap);
+
     wrap.appendChild(dropdown);
 
     function makeOption(text, value) {
@@ -269,7 +280,7 @@
       cb.value = value;
       optLbl.appendChild(cb);
       optLbl.appendChild(document.createTextNode('\u00a0' + text));
-      dropdown.appendChild(optLbl);
+      optionsWrap.appendChild(optLbl);
       return cb;
     }
 
@@ -307,17 +318,30 @@
       });
     });
 
+    search.addEventListener('input', () => {
+      const q = search.value.trim().toLowerCase();
+      itemCbs.forEach(cb => {
+        const labelTextContent = cb.closest('label').textContent.toLowerCase();
+        cb.closest('label').style.display = !q || labelTextContent.includes(q) ? '' : 'none';
+      });
+      allCb.closest('label').style.display = !q ? '' : 'none';
+    });
+
     let open = false;
     function closeDropdown() {
       open = false;
       dropdown.classList.remove('multiselect-open');
       trigger.setAttribute('aria-expanded', 'false');
+      search.value = '';
+      itemCbs.forEach(cb => { cb.closest('label').style.display = ''; });
+      allCb.closest('label').style.display = '';
     }
     trigger.addEventListener('click', e => {
       e.stopPropagation();
       open = !open;
       dropdown.classList.toggle('multiselect-open', open);
       trigger.setAttribute('aria-expanded', String(open));
+      if (open) search.focus();
     });
     trigger.addEventListener('keydown', e => {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); trigger.click(); }
