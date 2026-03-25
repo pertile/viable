@@ -151,9 +151,17 @@ function viable_map_shortcode($atts) {
             ];
         }
         if (in_array('category', $enabled_filters)) {
-            $categories = viable_get_region_categories(['hide_empty' => false]);
-            $filter_data['categories'] = array_map(function($cat) {
-                return ['id' => $cat->term_id, 'name' => $cat->name, 'slug' => $cat->slug];
+            $categories = viable_get_region_categories_hierarchy();
+            $filter_data['categories'] = array_map(function($item) {
+                $term = $item['term'];
+                $depth = (int) $item['depth'];
+                $prefix = str_repeat('-- ', max(0, $depth));
+
+                return [
+                    'id' => $term->term_id,
+                    'name' => $prefix . $term->name,
+                    'slug' => $term->slug,
+                ];
             }, $categories);
         }
     }

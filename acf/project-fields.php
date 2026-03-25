@@ -546,7 +546,8 @@ add_action( 'acf/include_fields', function() {
 } );
 
 /**
- * Limita el selector ACF "Regiones" a categorías hijas directas de la categoría padre "Regiones".
+ * Limita el selector ACF "Regiones" a categorías descendientes de la categoría padre "Regiones"
+ * (hijas, nietas y niveles inferiores).
  */
 add_filter( 'acf/fields/taxonomy/query/name=regions', function( $args, $field, $post_id ) {
 	$parent = viable_get_regions_parent_term();
@@ -558,7 +559,7 @@ add_filter( 'acf/fields/taxonomy/query/name=regions', function( $args, $field, $
 	}
 
 	$args['taxonomy'] = 'category';
-	$args['parent'] = (int) $parent->term_id;
+	$args['child_of'] = (int) $parent->term_id;
 	$args['orderby'] = 'name';
 	$args['order'] = 'ASC';
 
