@@ -532,6 +532,8 @@ a.viable-ver-mas-btn:hover {
   justify-content: center;
   box-shadow: 0 1px 4px rgba(0,0,0,0.2);
   transition: background 0.15s;
+  color: #1f2937 !important;
+  font-weight: 700;
 }
 
 .viable-map-expand-btn:hover {
@@ -552,9 +554,9 @@ a.viable-ver-mas-btn:hover {
 
 .viable-map-modal {
   position: relative;
-  width: 90vw;
-  height: 85vh;
-  max-width: 1100px;
+  width: 96vw;
+  height: 92vh;
+  max-width: 1400px;
   background: #fff;
   border-radius: 6px;
   overflow: hidden;
@@ -586,6 +588,8 @@ a.viable-ver-mas-btn:hover {
   justify-content: center;
   box-shadow: 0 1px 4px rgba(0,0,0,0.25);
   transition: background 0.15s;
+  color: #1f2937 !important;
+  font-weight: 700;
 }
 
 .viable-map-modal-close:hover {
@@ -751,15 +755,22 @@ a.viable-ver-mas-btn:hover {
   padding: 0.35rem 0.45rem;
   border-radius: 4px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-  font-size: 0.8rem;
+  font-size: 0.74rem;
   line-height: 1.3;
   width: 260px;
   max-width: 60vw;
+  color: #1f2937 !important;
+  font-family: inherit !important;
 }
 
 .viable-map-legend strong {
   display: inline-block;
-  font-size: 0.85rem;
+  font-size: 0.78rem;
+  color: #111827 !important;
+}
+
+.viable-map-legend * {
+  color: #1f2937;
 }
 
 .legend-header {
@@ -778,7 +789,9 @@ a.viable-ver-mas-btn:hover {
   height: 22px;
   line-height: 1;
   cursor: pointer;
-  color: #444;
+  color: #111827 !important;
+  font-size: 0.95rem;
+  font-weight: 700;
 }
 
 .legend-body {
@@ -807,6 +820,8 @@ a.viable-ver-mas-btn:hover {
   text-align: left;
   cursor: pointer;
   border-radius: 3px;
+  color: #1f2937 !important;
+  font-size: 0.74rem;
 }
 
 .legend-item-btn:hover {
@@ -816,6 +831,7 @@ a.viable-ver-mas-btn:hover {
 .legend-item-text {
   overflow: hidden;
   text-overflow: ellipsis;
+  color: #1f2937 !important;
 }
 
 .legend-swatch {
@@ -843,6 +859,9 @@ a.viable-ver-mas-btn:hover {
   height: 22px;
   line-height: 1;
   cursor: pointer;
+  color: #111827 !important;
+  font-size: 0.95rem;
+  font-weight: 700;
 }
 
 .legend-page-btn:disabled {
@@ -851,8 +870,8 @@ a.viable-ver-mas-btn:hover {
 }
 
 .legend-page-status {
-  font-size: 0.75rem;
-  color: #555;
+  font-size: 0.72rem;
+  color: #374151 !important;
 }
 
 /* ── Panel de filtros (multi-select dropdown) ────────────── */
