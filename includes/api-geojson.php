@@ -333,6 +333,7 @@ function viable_get_category_projects($request) {
     
     $table_name = $table_row['table_name'];
     $features = [];
+    $projects_list = [];
     $debug_info = [];
     
     while ($projects->have_posts()) {
@@ -510,6 +511,10 @@ function viable_get_map_projects($request) {
             if (!array_intersect($requested_categories, $region_ids)) continue;
         }
 
+        $proj_type       = get_field('type', $pid);
+        $proj_dup_type   = get_field('duplication_type', $pid);
+        $proj_type_disp  = (strtolower($proj_type) === 'duplicación' && $proj_dup_type) ? $proj_dup_type : $proj_type;
+
         // Buscar última entrada relacionada a este proyecto
         $latest_post_info = null;
         $latest_q = new WP_Query([
@@ -532,6 +537,17 @@ function viable_get_map_projects($request) {
             ];
         }
 
+        $projects_list[] = [
+            'code'              => $code,
+            'name'              => get_the_title($pid),
+            'type_display'      => $proj_type_disp,
+            'short_description' => get_field('short_description', $pid),
+            'url'               => get_permalink($pid),
+            'state'             => get_field('state', $pid),
+            'type'              => $proj_type,
+            'last_post'         => $latest_post_info,
+        ];
+
         // Buscar geometría
         $stmt = $db->prepare("SELECT * FROM {$table_name} WHERE code = :code");
         $stmt->bindValue(':code', $code, SQLITE3_TEXT);
@@ -542,10 +558,6 @@ function viable_get_map_projects($request) {
             if (!$geom_blob) continue;
             $geometry = viable_wkb_to_geojson($geom_blob);
             if (!$geometry) continue;
-
-            $proj_type       = get_field('type', $pid);
-            $proj_dup_type   = get_field('duplication_type', $pid);
-            $proj_type_disp  = (strtolower($proj_type) === 'duplicación' && $proj_dup_type) ? $proj_dup_type : $proj_type;
 
             $features[] = [
                 'type'       => 'Feature',
@@ -570,7 +582,8 @@ function viable_get_map_projects($request) {
 
     return rest_ensure_response([
         'type'     => 'FeatureCollection',
-        'features' => $features
+        'features' => $features,
+        'projects' => $projects_list,
     ]);
 }
 

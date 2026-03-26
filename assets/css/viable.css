@@ -748,19 +748,46 @@ a.viable-ver-mas-btn:hover {
 /* ── Leyenda ──────────────────────────────────────────────── */
 .viable-map-legend {
   background: rgba(255,255,255,0.95);
-  padding: 0.6rem 0.8rem;
+  padding: 0.35rem 0.45rem;
   border-radius: 4px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.2);
   font-size: 0.8rem;
-  line-height: 1.6;
-  max-height: 220px;
-  overflow-y: auto;
+  line-height: 1.3;
+  width: 260px;
+  max-width: 60vw;
 }
 
 .viable-map-legend strong {
-  display: block;
-  margin-bottom: 0.3rem;
+  display: inline-block;
   font-size: 0.85rem;
+}
+
+.legend-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.2rem;
+}
+
+.legend-toggle {
+  border: 1px solid #ced4da;
+  background: #fff;
+  border-radius: 3px;
+  width: 22px;
+  height: 22px;
+  line-height: 1;
+  cursor: pointer;
+  color: #444;
+}
+
+.legend-body {
+  display: block;
+}
+
+.legend-list {
+  max-height: 210px;
+  overflow-y: auto;
 }
 
 .legend-item {
@@ -772,6 +799,25 @@ a.viable-ver-mas-btn:hover {
   text-overflow: ellipsis;
 }
 
+.legend-item-btn {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0.15rem 0.2rem;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 3px;
+}
+
+.legend-item-btn:hover {
+  background: #f3f6f9;
+}
+
+.legend-item-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .legend-swatch {
   display: inline-block;
   width: 14px;
@@ -779,6 +825,34 @@ a.viable-ver-mas-btn:hover {
   border-radius: 2px;
   flex-shrink: 0;
   border: 1px solid rgba(0,0,0,0.15);
+}
+
+.legend-pager {
+  margin-top: 0.25rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.legend-page-btn {
+  border: 1px solid #ced4da;
+  background: #fff;
+  border-radius: 3px;
+  min-width: 24px;
+  height: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.legend-page-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.legend-page-status {
+  font-size: 0.75rem;
+  color: #555;
 }
 
 /* ── Panel de filtros (multi-select dropdown) ────────────── */

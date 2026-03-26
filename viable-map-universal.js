@@ -98,19 +98,116 @@
   }
 
   /** Crea la leyenda Leaflet */
-  function addLegend(map, colorMap) {
+  function addLegend(map, colorMap, options = {}) {
     const legend = L.control({ position: 'bottomleft' });
     legend.onAdd = function () {
       const div = L.DomUtil.create('div', 'viable-map-legend');
       const entries = Object.entries(colorMap);
       if (entries.length === 0) return div;
 
-      let html = '<strong>Proyectos</strong>';
-      entries.forEach(([code, color]) => {
-        const label = legend._labelMap ? (legend._labelMap[code] || code) : code;
-        html += `<div class="legend-item"><span class="legend-swatch" style="background:${color}"></span> ${label}</div>`;
+      const pageSize = Number(options.pageSize || 20);
+      const labelMap = options.labelMap || {};
+      const onSelect = typeof options.onSelect === 'function' ? options.onSelect : null;
+      let page = 0;
+
+      const header = document.createElement('div');
+      header.className = 'legend-header';
+      const title = document.createElement('strong');
+      title.textContent = 'Proyectos';
+      const toggle = document.createElement('button');
+      toggle.type = 'button';
+      toggle.className = 'legend-toggle';
+      toggle.textContent = '−';
+      toggle.setAttribute('aria-expanded', 'true');
+      header.appendChild(title);
+      header.appendChild(toggle);
+
+      const body = document.createElement('div');
+      body.className = 'legend-body';
+
+      const list = document.createElement('div');
+      list.className = 'legend-list';
+      body.appendChild(list);
+
+      const pager = document.createElement('div');
+      pager.className = 'legend-pager';
+      const prev = document.createElement('button');
+      prev.type = 'button';
+      prev.className = 'legend-page-btn';
+      prev.textContent = '‹';
+      const status = document.createElement('span');
+      status.className = 'legend-page-status';
+      const next = document.createElement('button');
+      next.type = 'button';
+      next.className = 'legend-page-btn';
+      next.textContent = '›';
+      pager.appendChild(prev);
+      pager.appendChild(status);
+      pager.appendChild(next);
+      body.appendChild(pager);
+
+      function renderPage() {
+        const totalPages = Math.max(1, Math.ceil(entries.length / pageSize));
+        if (page >= totalPages) page = totalPages - 1;
+
+        list.innerHTML = '';
+        const start = page * pageSize;
+        const end = Math.min(start + pageSize, entries.length);
+        for (let i = start; i < end; i++) {
+          const code = entries[i][0];
+          const color = entries[i][1];
+          const label = labelMap[code] || code;
+
+          const item = document.createElement('button');
+          item.type = 'button';
+          item.className = 'legend-item legend-item-btn';
+          item.title = label;
+
+          const sw = document.createElement('span');
+          sw.className = 'legend-swatch';
+          sw.style.background = color;
+          const txt = document.createElement('span');
+          txt.className = 'legend-item-text';
+          txt.textContent = label;
+
+          item.appendChild(sw);
+          item.appendChild(txt);
+          if (onSelect) item.addEventListener('click', () => onSelect(code));
+          list.appendChild(item);
+        }
+
+        status.textContent = `${page + 1}/${totalPages}`;
+        prev.disabled = page <= 0;
+        next.disabled = page >= totalPages - 1;
+        pager.style.display = totalPages > 1 ? 'flex' : 'none';
+      }
+
+      prev.addEventListener('click', () => {
+        if (page > 0) {
+          page -= 1;
+          renderPage();
+        }
       });
-      div.innerHTML = html;
+      next.addEventListener('click', () => {
+        const totalPages = Math.max(1, Math.ceil(entries.length / pageSize));
+        if (page < totalPages - 1) {
+          page += 1;
+          renderPage();
+        }
+      });
+      toggle.addEventListener('click', () => {
+        const collapsed = body.style.display === 'none';
+        body.style.display = collapsed ? '' : 'none';
+        toggle.textContent = collapsed ? '−' : '+';
+        toggle.setAttribute('aria-expanded', collapsed ? 'true' : 'false');
+      });
+
+      renderPage();
+      div.appendChild(header);
+      div.appendChild(body);
+
+      L.DomEvent.disableClickPropagation(div);
+      L.DomEvent.disableScrollPropagation(div);
       return div;
     };
     return legend;
@@ -183,8 +280,15 @@
       modalLayers.forEach(l => bigMap.removeLayer(l));
       if (modalLegend) { bigMap.removeControl(modalLegend); modalLegend = null; }
       modalLayers = drawFeatures(bigMap, feat, cmap);
-      const lc = addLegend(bigMap, cmap);
-      lc._labelMap = buildLabelMap(feat);
+      const codeBounds = buildCodeBounds(feat);
+      const lc = addLegend(bigMap, cmap, {
+        labelMap: buildLabelMap(feat),
+        pageSize: 20,
+        onSelect: (code) => {
+          const b = codeBounds[code];
+          if (b && b.isValid()) bigMap.fitBounds(b, { padding: [30, 30], maxZoom: 12 });
+        }
+      });
       lc.addTo(bigMap);
       modalLegend = lc;
       if (modalLayers.length) {
@@ -228,6 +332,54 @@
 
   function buildLabelMap(features) {
     return buildLabelMapFull(features);
+  }
+
+  function buildCodeBounds(features) {
+    const byCode = {};
+    features.forEach(feature => {
+      const code = feature?.properties?.code;
+      if (!code) return;
+      const bounds = L.geoJSON(feature).getBounds();
+      if (!bounds.isValid()) return;
+      if (!byCode[code]) byCode[code] = bounds;
+      else byCode[code].extend(bounds);
+    });
+    return byCode;
+  }
+
+  function renderProjectList(listEl, featuresOrProjects) {
+    if (!listEl) return;
+
+    const byCode = {};
+    (featuresOrProjects || []).forEach(item => {
+      const p = item && item.properties ? item.properties : item;
+      const code = p?.code;
+      if (!code || byCode[code]) return;
+      byCode[code] = p;
+    });
+
+    const projects = Object.values(byCode);
+    if (!projects.length) {
+      listEl.innerHTML = '<p class="viable-list-empty">No hay proyectos para los filtros seleccionados.</p>';
+      return;
+    }
+
+    listEl.innerHTML = projects.map(p => {
+      const title = p.type_display ? `${p.type_display}: ${p.name}` : p.name;
+      const shortDesc = p.short_description ? `<p class="project-list-desc">${p.short_description}</p>` : '';
+      const state = p.state ? `<span class="project-list-state">Estado: <strong>${p.state}</strong></span>` : '';
+      const lastPost = p.last_post && p.last_post.url
+        ? `<span class="project-list-last-post">Última noticia: <a href="${p.last_post.url}">${p.last_post.title || 'Ver nota'}</a></span>`
+        : '';
+
+      return `
+        <article class="viable-project-list-item">
+          <h4 class="project-list-title"><a href="${p.url || '#'}">${title}</a></h4>
+          ${shortDesc}
+          <p class="project-list-meta">${state} ${lastPost}</p>
+        </article>
+      `;
+    }).join('');
   }
 
   /* ── Multi-select dropdown ──────────────────────────────────── */
@@ -450,6 +602,7 @@
 
         const geojson = await resp.json();
         const features = geojson.features || [];
+        const projectsList = geojson.projects || [];
         currentFeatures = features;
 
         if (features.length === 0) {
@@ -472,8 +625,15 @@
 
         // Leyenda
         if (showLegend) {
-          const legendCtrl = addLegend(map, colorMap);
-          legendCtrl._labelMap = buildLabelMap(features);
+          const codeBounds = buildCodeBounds(features);
+          const legendCtrl = addLegend(map, colorMap, {
+            labelMap: buildLabelMap(features),
+            pageSize: 20,
+            onSelect: (code) => {
+              const b = codeBounds[code];
+              if (b && b.isValid()) map.fitBounds(b, { padding: [20, 20], maxZoom: 12 });
+            }
+          });
           legendCtrl.addTo(map);
           currentLegend = legendCtrl;
         }
@@ -487,7 +647,7 @@
 
         // Listado de proyectos
         if (showList && listContainer) {
-          renderProjectList(listContainer, currentFeatures);
+          renderProjectList(listContainer, projectsList.length ? projectsList : currentFeatures);
         }
 
       } catch (err) {

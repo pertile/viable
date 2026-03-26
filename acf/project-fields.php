@@ -550,18 +550,45 @@ add_action( 'acf/include_fields', function() {
  * (hijas, nietas y niveles inferiores).
  */
 add_filter( 'acf/fields/taxonomy/query/name=regions', function( $args, $field, $post_id ) {
-	$parent = viable_get_regions_parent_term();
+	$region_terms = viable_get_region_categories();
+	$region_ids = array_map(function($t) { return (int) $t->term_id; }, $region_terms);
 
-	if ( ! $parent ) {
+	if ( empty($region_ids) ) {
 		// Si no existe la categoría contenedora, no mostrar opciones para evitar selecciones inválidas.
 		$args['include'] = array(0);
 		return $args;
 	}
 
 	$args['taxonomy'] = 'category';
-	$args['child_of'] = (int) $parent->term_id;
+	$args['include'] = $region_ids;
 	$args['orderby'] = 'name';
 	$args['order'] = 'ASC';
 
 	return $args;
+}, 10, 3 );
+
+add_filter( 'acf/fields/taxonomy/wp_list_categories/name=regions', function( $args, $field ) {
+	$region_terms = viable_get_region_categories();
+	$region_ids = array_map(function($t) { return (int) $t->term_id; }, $region_terms);
+	$args['taxonomy'] = 'category';
+	$args['include'] = empty($region_ids) ? array(0) : $region_ids;
+	$args['orderby'] = 'name';
+	$args['order'] = 'ASC';
+	$args['hierarchical'] = true;
+	return $args;
+}, 10, 2 );
+
+add_filter( 'acf/update_value/name=regions', function( $value, $post_id, $field ) {
+	$region_terms = viable_get_region_categories();
+	$allowed_ids = array_map(function($t) { return (int) $t->term_id; }, $region_terms);
+
+	if (empty($allowed_ids)) {
+		return array();
+	}
+
+	$values = is_array($value) ? $value : array($value);
+	$values = array_map('intval', $values);
+	$values = array_values(array_intersect($values, $allowed_ids));
+
+	return $values;
 }, 10, 3 );
