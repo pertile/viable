@@ -35,12 +35,21 @@ function viable_project_infobox_shortcode($atts) {
     $bid_date_formatted   = $d['bid_date_formatted'];
     $award_date_formatted = $d['award_date_formatted'];
     $start_date_formatted = $d['start_date_formatted'];
+    $start_date_raw = $d['start_date_raw'];
     $tender_documents = $d['tender_documents'];
     $code         = $d['code'];
     $roads_text   = $d['roads_text'];
     $regions_text = $d['regions_text'];
     $image        = $d['image'];
     $map          = $d['map'];
+    $is_parent_project = $d['is_parent_project'];
+    $parent_project_id = $d['parent_project_id'];
+    $parent_project_name = $d['parent_project_name'];
+    $parent_project_url = $d['parent_project_url'];
+    $children_projects = $d['children_projects'];
+    $sibling_project_ids = $d['sibling_project_ids'];
+    $map_codes = $d['map_codes'];
+    $timeline = $d['timeline'];
 
     ob_start();
     include(VIABLE_PATH . 'includes/project-sheet-template.php');
@@ -134,7 +143,13 @@ function viable_map_shortcode($atts) {
     // Enqueue Leaflet + JS universal
     wp_enqueue_style('leaflet', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');
     wp_enqueue_script('leaflet', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js', [], null, true);
-    wp_enqueue_script('viable-map-universal', VIABLE_URL . 'viable-map-universal.js', ['leaflet'], '1.1', true);
+    wp_enqueue_script(
+        'viable-map-universal',
+        VIABLE_URL . 'viable-map-universal.js',
+        ['leaflet'],
+        file_exists(VIABLE_PATH . 'viable-map-universal.js') ? filemtime(VIABLE_PATH . 'viable-map-universal.js') : null,
+        true
+    );
 
     // Datos para los filtros (solo los solicitados)
     $filter_data = [];

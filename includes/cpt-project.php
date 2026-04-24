@@ -64,7 +64,7 @@ add_action('wp_enqueue_scripts', function () {
         'viable-map',
         VIABLE_URL . 'viable-map.js',
         ['leaflet'],
-        '1.0',
+        file_exists(VIABLE_PATH . 'viable-map.js') ? filemtime(VIABLE_PATH . 'viable-map.js') : null,
         true
     );
     

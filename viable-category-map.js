@@ -72,6 +72,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             ${props.type ? `<p><strong>Tipo:</strong> ${props.type}</p>` : ''}
                             ${props.tramo ? `<p><strong>Tramo:</strong> ${props.tramo}</p>` : ''}
                             <p><a href="${props.url}" class="button">Ver proyecto →</a></p>
+                            ${props.parent_name && props.parent_url ? `<p class="popup-parent-link">Parte de <a href="${props.parent_url}">${props.parent_name}</a></p>` : ''}
                         </div>
                     `;
                     

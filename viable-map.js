@@ -1,19 +1,31 @@
-document.addEventListener('DOMContentLoaded', async () => {
-  const el = document.getElementById('viable-map');
-  if (!el) return;
+document.addEventListener('DOMContentLoaded', () => {
+  const mapElements = Array.from(document.querySelectorAll('.viable-map-single'));
+  if (!mapElements.length) return;
+
+  mapElements.forEach(async (el) => {
 
   const projectCode = el.dataset.code;
   const restBase = (el.dataset.restUrl || '').replace(/\/$/, '');
+  const siblingCodes = (el.dataset.siblingCodes || '')
+    .split(',')
+    .map((v) => v.trim())
+    .filter(Boolean);
 
   if (!projectCode) {
     console.error('Viable Map: Missing project code');
     return;
   }
 
+  const uniqueCodes = [...new Set([projectCode, ...siblingCodes])];
+  const useUniversalEndpoint = uniqueCodes.length > 1;
+  const universalBase = restBase ? restBase.replace(/\/geojson$/, '/map-projects') : `${window.location.origin}/wp-json/viable/v1/map-projects`;
+
   // Construir URL del endpoint REST API (usa rest_url para soportar subdirectorios)
-  const apiUrl = restBase
-    ? `${restBase}/${encodeURIComponent(projectCode)}`
-    : `${window.location.origin}/wp-json/viable/v1/geojson/${encodeURIComponent(projectCode)}`;
+  const apiUrl = useUniversalEndpoint
+    ? `${universalBase}?codes=${encodeURIComponent(uniqueCodes.join(','))}`
+    : (restBase
+      ? `${restBase}/${encodeURIComponent(projectCode)}`
+      : `${window.location.origin}/wp-json/viable/v1/geojson/${encodeURIComponent(projectCode)}`);
 
   try {
     // Cargar geojson filtrado desde el servidor
@@ -26,7 +38,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    const geojsonData = await response.json();
+    const responseData = await response.json();
+    const geojsonData = useUniversalEndpoint
+      ? { features: responseData.features || [] }
+      : responseData;
 
     if (!geojsonData.features || geojsonData.features.length === 0) {
       console.warn('Viable Map: No features found for code:', projectCode);
@@ -50,7 +65,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     function drawFeatures(targetMap) {
       const featureLayers = [];
       geojsonData.features.forEach((feature, index) => {
-        const color = colors[index % colors.length];
+        const code = feature.properties && feature.properties.code ? feature.properties.code : projectCode;
+        const isPrimary = code === projectCode;
+        const color = isPrimary ? colors[index % colors.length] : '#a6adb4';
         const tramo = feature.properties.tramo || `Tramo ${index + 1}`;
 
         // Capa de contorno blanco (debajo)
@@ -68,8 +85,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const layer = L.geoJSON(feature, {
           style: {
             color: color,
-            weight: 4,
-            opacity: 0.95,
+            weight: isPrimary ? 4 : 3,
+            opacity: isPrimary ? 0.95 : 0.6,
             lineCap: 'round',
             lineJoin: 'round'
           }
@@ -146,4 +163,5 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.error('Viable Map Error:', error);
     el.innerHTML = '<p style="padding: 1rem; text-align: center; color: #dc3545;">Error al cargar el mapa</p>';
   }
+  });
 });

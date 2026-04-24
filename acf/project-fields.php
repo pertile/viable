@@ -83,6 +83,33 @@ add_action( 'acf/include_fields', function() {
 				'append' => '',
 			),
 			array(
+				'key' => 'field_68094b5a_project_parent',
+				'label' => 'Proyecto padre',
+				'name' => 'project_parent',
+				'aria-label' => '',
+				'type' => 'post_object',
+				'instructions' => 'Opcional. Seleccioná un único proyecto padre.',
+				'required' => 0,
+				'conditional_logic' => 0,
+				'wrapper' => array(
+					'width' => '',
+					'class' => '',
+					'id' => '',
+				),
+				'post_type' => array(
+					0 => 'project',
+				),
+				'post_status' => '',
+				'taxonomy' => '',
+				'return_format' => 'object',
+				'multiple' => 0,
+				'allow_null' => 1,
+				'allow_in_bindings' => 0,
+				'bidirectional' => 0,
+				'ui' => 1,
+				'bidirectional_target' => array(),
+			),
+			array(
 				'key' => 'field_697e0733309f0',
 				'label' => 'Resumen',
 				'name' => 'short_description',
@@ -319,10 +346,10 @@ add_action( 'acf/include_fields', function() {
 			),
 			array(
 				'key' => 'field_697e69e0357ff',
-				'label' => 'Plazo',
+				'label' => 'Plazo (meses)',
 				'name' => 'duration',
 				'aria-label' => '',
-				'type' => 'text',
+				'type' => 'number',
 				'instructions' => '',
 				'required' => 0,
 				'conditional_logic' => 0,
@@ -332,9 +359,11 @@ add_action( 'acf/include_fields', function() {
 					'id' => '',
 				),
 				'default_value' => '',
-				'maxlength' => '',
+				'min' => 0,
+				'max' => '',
 				'allow_in_bindings' => 0,
 				'placeholder' => '',
+				'step' => 1,
 				'prepend' => '',
 				'append' => '',
 			),
@@ -412,7 +441,7 @@ add_action( 'acf/include_fields', function() {
 					'class' => '',
 					'id' => '',
 				),
-				'display_format' => 'F Y',
+				'display_format' => 'd/m/Y',
 				'return_format' => 'd/m/Y',
 				'first_day' => 1,
 				'default_to_current_date' => 0,
@@ -592,3 +621,60 @@ add_filter( 'acf/update_value/name=regions', function( $value, $post_id, $field 
 
 	return $values;
 }, 10, 3 );
+
+add_filter( 'acf/fields/post_object/query/name=project_parent', function( $args, $field, $post_id ) {
+	$args['post_type'] = array('project');
+	$args['post_status'] = array('publish', 'draft', 'pending', 'private');
+
+	if ( is_numeric($post_id) ) {
+		$args['post__not_in'] = array((int) $post_id);
+	}
+
+	return $args;
+}, 10, 3 );
+
+add_filter( 'acf/update_value/name=duration', function( $value, $post_id, $field ) {
+	if ( $value === null || $value === '' ) {
+		return '';
+	}
+
+	if ( is_numeric($value) ) {
+		return (int) $value;
+	}
+
+	if ( preg_match('/(\d+)/', (string) $value, $m) ) {
+		return (int) $m[1];
+	}
+
+	return '';
+}, 10, 3 );
+
+add_action( 'admin_init', function() {
+	if ( !is_admin() || !current_user_can('manage_options') ) {
+		return;
+	}
+
+	if ( get_option('viable_duration_migrated_to_number') ) {
+		return;
+	}
+
+	$projects = get_posts(array(
+		'post_type'      => 'project',
+		'post_status'    => 'any',
+		'posts_per_page' => -1,
+		'fields'         => 'ids',
+	));
+
+	foreach ($projects as $project_id) {
+		$raw = get_field('duration', $project_id, false);
+		if ($raw === null || $raw === '') {
+			continue;
+		}
+
+		if (preg_match('/(\d+)/', (string) $raw, $m)) {
+			update_field('duration', (int) $m[1], $project_id);
+		}
+	}
+
+	update_option('viable_duration_migrated_to_number', 1, false);
+} );

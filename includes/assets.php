@@ -7,6 +7,6 @@ function viable_enqueue_styles() {
         'viable-styles',
         VIABLE_URL . 'assets/css/viable.css',
         [],
-        '1.0'
+        file_exists(VIABLE_PATH . 'assets/css/viable.css') ? filemtime(VIABLE_PATH . 'assets/css/viable.css') : null
     );
 }

@@ -377,6 +377,14 @@ function viable_get_category_projects($request) {
             $geometry = viable_wkb_to_geojson($geometry_blob);
             
             if ($geometry) {
+                $parent_post = get_field('project_parent', $pid);
+                $parent_id = 0;
+                if (is_object($parent_post) && isset($parent_post->ID)) {
+                    $parent_id = (int) $parent_post->ID;
+                } elseif (is_numeric($parent_post)) {
+                    $parent_id = (int) $parent_post;
+                }
+
                 $features[] = [
                     'type' => 'Feature',
                     'properties' => [
@@ -387,7 +395,10 @@ function viable_get_category_projects($request) {
                         'type' => get_field('type', $pid),
                         'tramo' => $row['tramo'] ?? '',
                         'estado' => $row['estado'] ?? '',
-                        'tipo' => $row['tipo'] ?? ''
+                        'tipo' => $row['tipo'] ?? '',
+                        'parent_id' => $parent_id,
+                        'parent_name' => $parent_id ? get_the_title($parent_id) : null,
+                        'parent_url' => $parent_id ? get_permalink($parent_id) : null,
                     ],
                     'geometry' => $geometry
                 ];
@@ -489,6 +500,7 @@ function viable_get_map_projects($request) {
     $table_name = $table_row['table_name'];
 
     $features = [];
+    $projects_list = [];
 
     while ($projects->have_posts()) {
         $projects->the_post();
@@ -514,6 +526,13 @@ function viable_get_map_projects($request) {
         $proj_type       = get_field('type', $pid);
         $proj_dup_type   = get_field('duplication_type', $pid);
         $proj_type_disp  = (strtolower($proj_type) === 'duplicación' && $proj_dup_type) ? $proj_dup_type : $proj_type;
+        $parent_post = get_field('project_parent', $pid);
+        $parent_id = 0;
+        if (is_object($parent_post) && isset($parent_post->ID)) {
+            $parent_id = (int) $parent_post->ID;
+        } elseif (is_numeric($parent_post)) {
+            $parent_id = (int) $parent_post;
+        }
 
         // Buscar última entrada relacionada a este proyecto
         $latest_post_info = null;
@@ -546,6 +565,9 @@ function viable_get_map_projects($request) {
             'state'             => get_field('state', $pid),
             'type'              => $proj_type,
             'last_post'         => $latest_post_info,
+            'parent_id'         => $parent_id,
+            'parent_name'       => $parent_id ? get_the_title($parent_id) : null,
+            'parent_url'        => $parent_id ? get_permalink($parent_id) : null,
         ];
 
         // Buscar geometría
@@ -571,6 +593,9 @@ function viable_get_map_projects($request) {
                     'type'              => $proj_type,
                     'tramo'             => $row['tramo'] ?? '',
                     'last_post'         => $latest_post_info,
+                    'parent_id'         => $parent_id,
+                    'parent_name'       => $parent_id ? get_the_title($parent_id) : null,
+                    'parent_url'        => $parent_id ? get_permalink($parent_id) : null,
                 ],
                 'geometry'   => $geometry
             ];

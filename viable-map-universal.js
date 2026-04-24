@@ -89,6 +89,9 @@
       if (feature.properties.url) {
         popupHtml += `<br><a href="${feature.properties.url}">Ver proyecto →</a>`;
       }
+      if (feature.properties.parent_name && feature.properties.parent_url) {
+        popupHtml += `<br><span class="popup-parent-link">Parte de <a href="${feature.properties.parent_url}">${feature.properties.parent_name}</a></span>`;
+      }
       layer.bindPopup(popupHtml);
 
       layers.push(layer);

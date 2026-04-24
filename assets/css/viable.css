@@ -13,8 +13,8 @@
 
 /* Asegurar que las imágenes del contenido respeten el espacio del infobox */
 .viable-post-content-wrapper {
-  overflow: hidden;
-  margin-right: 440px; /* 400px del infobox + 40px de espacio */
+  overflow: visible;
+  margin-right: 0;
 }
 
 @media (max-width: 768px) {
@@ -43,6 +43,13 @@
 .single-project .post-content,
 .single-project article {
   overflow: hidden;
+}
+
+.single-project .entry-content,
+.single-project .post-content,
+.single-project article,
+.single-project .viable-post-content-wrapper {
+  overflow: visible;
 }
 
 /* Prevenir que elementos anchos rompan el layout */
@@ -136,6 +143,15 @@
 .info-value {
   color: #333;
   text-align: right;
+}
+
+.info-item-parent .info-value a {
+  color: #0066cc;
+  text-decoration: none;
+}
+
+.info-item-parent .info-value a:hover {
+  text-decoration: underline;
 }
 
 .state-sequence {
@@ -300,18 +316,219 @@
   font-size: 0.9rem;
 }
 
-.progress-bar {
+.viable-timeline-rail {
   background: #e9ecef;
   height: 8px;
   border-radius: 4px;
-  overflow: hidden;
+  overflow: visible;
+  width: 100%;
+  float: none;
+  position: relative;
 }
 
-.progress-bar-fill {
+.viable-timeline-fill {
   background: linear-gradient(90deg, #198754, #20c997);
   height: 100%;
   transition: width 0.3s ease;
+  position: relative;
 }
+
+.progress-value-inside {
+  position: absolute;
+  right: 0.35rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+}
+
+.progress-timeline-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.timeline-bar {
+  position: relative;
+  height: 14px;
+  overflow: visible;
+  margin: 2.5rem 0 3.25rem;
+}
+
+.timeline-bar-with-dates {
+  margin-top: 4.5rem;
+}
+
+.timeline-bar-simple {
+  margin: 0.25rem 0;
+}
+
+.timeline-point {
+  position: absolute;
+  top: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+}
+
+.timeline-point::before {
+  content: '';
+  display: block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #d1d5db;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 1px rgba(31, 41, 55, 0.08);
+}
+
+.timeline-point-start::before,
+.timeline-point-updated::before,
+.timeline-point-planned::before,
+.timeline-point-completion::before {
+  background: #1d9e75;
+}
+
+.timeline-point-planned::before {
+  background: #f59e0b;
+}
+
+.timeline-point-completion::before {
+  background: #60a5fa;
+}
+
+.timeline-point.is-current::before {
+  width: 18px;
+  height: 18px;
+  margin-left: -2px;
+  margin-top: -2px;
+  box-shadow: 0 0 0 6px rgba(29, 158, 117, 0.18);
+}
+
+.timeline-label-top-date,
+.timeline-label-top-text,
+.timeline-label-bottom-date,
+.timeline-label-bottom-text {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  text-align: center;
+}
+
+.timeline-label-top-date,
+.timeline-label-bottom-date {
+  font-size: 0.74rem;
+  color: #5b5d5a;
+}
+
+.timeline-label-top-text,
+.timeline-label-bottom-text {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #141413;
+}
+
+.timeline-label-top-date {
+  bottom: 2.15rem;
+}
+
+.timeline-label-top-text {
+  bottom: 3.35rem;
+}
+
+.timeline-point-updated .timeline-label-top-date {
+  bottom: 3.5rem;
+}
+
+.timeline-point-updated .timeline-label-top-text {
+  bottom: 4.7rem;
+}
+
+.timeline-point-updated .timeline-dashed-line {
+  height: 3rem;
+}
+
+.timeline-point-top.timeline-tier-1 .timeline-label-top-date {
+  bottom: 3.2rem;
+}
+
+.timeline-point-top.timeline-tier-1 .timeline-label-top-text {
+  bottom: 4.4rem;
+}
+
+.timeline-point-top.timeline-tier-1 .timeline-dashed-line {
+  height: 2.7rem;
+}
+
+.timeline-point-top.timeline-tier-2 .timeline-label-top-date {
+  bottom: 4.6rem;
+}
+
+.timeline-point-top.timeline-tier-2 .timeline-label-top-text {
+  bottom: 5.8rem;
+}
+
+.timeline-point-top.timeline-tier-2 .timeline-dashed-line {
+  height: 4rem;
+}
+
+.timeline-point-bottom.timeline-tier-1 .timeline-label-bottom-date {
+  top: 2.6rem;
+}
+
+.timeline-point-bottom.timeline-tier-1 .timeline-label-bottom-text {
+  top: 3.8rem;
+}
+
+.timeline-label-bottom-date {
+  top: 1.2rem;
+}
+
+.timeline-label-bottom-text {
+  top: 2.35rem;
+}
+
+.timeline-dashed-line {
+  position: absolute;
+  left: 50%;
+  bottom: 1rem;
+  width: 1px;
+  height: 1.7rem;
+  border-left: 1px dashed rgba(31, 30, 29, 0.3);
+  transform: translateX(-50%);
+}
+
+.children-projects-box {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #eee;
+  border-bottom: 1px solid #eee;
+  background: #fff;
+}
+
+.children-projects-box h4 {
+  margin: 0 0 0.65rem;
+  font-size: 0.95rem;
+}
+
+.children-projects-list {
+  margin: 0;
+  padding-left: 1rem;
+}
+
+.children-projects-list li {
+  margin-bottom: 0.4rem;
+}
+
+.children-projects-list .child-meta {
+  display: inline-block;
+  margin-left: 0.35rem;
+  font-size: 0.78rem;
+  color: #6b7280;
+}
+
+
 
 /* Estados normales */
 .state-proyecto {
@@ -503,12 +720,12 @@ a.viable-ver-mas-btn:hover {
   color: #333;
 }
 
-#viable-map {
+.viable-map-single {
   border-top: 1px solid #eee;
   position: relative;
 }
 
-#viable-map .leaflet-popup-content {
+.viable-map-single .leaflet-popup-content {
   margin: 0.5rem;
   font-size: 0.9rem;
 }
@@ -609,6 +826,27 @@ a.viable-ver-mas-btn:hover {
   margin-top: 3rem;
   padding-top: 2rem;
   border-top: 3px solid #e9ecef;
+}
+
+.single-project .related-posts-section {
+  clear: both;
+  width: 100%;
+}
+
+.viable-below-sheet-full-width {
+  clear: both;
+  width: 100%;
+  display: block;
+  overflow: visible;
+}
+
+.single-project .related-posts-list {
+  width: 100%;
+}
+
+.single-project .viable-post-content-wrapper {
+  margin-right: 0;
+  width: 100%;
 }
 
 .related-posts-section h3 {
@@ -733,6 +971,12 @@ a.viable-ver-mas-btn:hover {
   border-radius: 4px;
   overflow: hidden;
   margin-bottom: 1.5rem;
+}
+
+.popup-parent-link {
+  display: inline-block;
+  margin-top: 0.2rem;
+  font-size: 0.85rem;
 }
 
 .viable-map-universal.viable-map-empty::after {
