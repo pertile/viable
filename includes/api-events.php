@@ -103,7 +103,10 @@ add_filter('rest_pre_serve_request', 'viable_add_cors_headers_for_events_api', 1
 
 function viable_add_cors_headers_for_events_api($served, $result, $request, $server) {
     $route = $request->get_route();
-    $is_relevant_route = (strpos($route, '/wp/v2/project-events') === 0) || (strpos($route, '/viable/v1/') === 0);
+    // '/wp/v2/project' como prefijo cubre tanto el CRUD de proyectos
+    // (/wp/v2/project, /wp/v2/project/123) como el de eventos
+    // (/wp/v2/project-events...), ya que ambos slugs empiezan igual.
+    $is_relevant_route = (strpos($route, '/wp/v2/project') === 0) || (strpos($route, '/viable/v1/') === 0);
 
     if (!$is_relevant_route) {
         return $served;
@@ -137,7 +140,7 @@ add_action('rest_api_init', function () {
             return $result;
         }
         $route = $request->get_route();
-        $is_relevant_route = (strpos($route, '/wp/v2/project-events') === 0) || (strpos($route, '/viable/v1/') === 0);
+        $is_relevant_route = (strpos($route, '/wp/v2/project') === 0) || (strpos($route, '/viable/v1/') === 0);
         if (!$is_relevant_route) {
             return $result;
         }

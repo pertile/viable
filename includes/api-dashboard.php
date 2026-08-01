@@ -108,7 +108,8 @@ function viable_get_projects_dashboard($request) {
         'post_type' => 'project',
         'post_status' => 'publish',
         'posts_per_page' => -1,
-        'orderby' => 'title',
+        'orderby' => 'meta_value',
+        'meta_key' => 'code',
         'order' => 'ASC',
         'fields' => 'ids',
     ];

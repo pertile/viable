@@ -37,11 +37,39 @@
     evState: document.getElementById('ev-state'),
     evSummary: document.getElementById('ev-summary'),
     eventFormMsg: document.getElementById('event-form-msg'),
+
+    btnNewProject: document.getElementById('btn-new-project'),
+    projectDialog: document.getElementById('project-dialog'),
+    projectDialogTitle: document.getElementById('project-dialog-title'),
+    projectForm: document.getElementById('project-form'),
+    btnCancelProject: document.getElementById('btn-cancel-project'),
+    projectFormMsg: document.getElementById('project-form-msg'),
+    prTitle: document.getElementById('pr-title'),
+    prCode: document.getElementById('pr-code'),
+    prShortDescription: document.getElementById('pr-short-description'),
+    prType: document.getElementById('pr-type'),
+    prDuplicationTypeWrap: document.getElementById('pr-duplication-type-wrap'),
+    prDuplicationType: document.getElementById('pr-duplication-type'),
+    prLength: document.getElementById('pr-length'),
+    prSections: document.getElementById('pr-sections'),
+    prState: document.getElementById('pr-state'),
+    prProgress: document.getElementById('pr-progress'),
+    prProgressUpdatedOn: document.getElementById('pr-progress-updated-on'),
+    prLastVerifiedOn: document.getElementById('pr-last-verified-on'),
+    prDuration: document.getElementById('pr-duration'),
+    prBidDate: document.getElementById('pr-bid-date'),
+    prAwardDate: document.getElementById('pr-award-date'),
+    prStartDate: document.getElementById('pr-start-date'),
+    prEndDate: document.getElementById('pr-end-date'),
+    prRegions: document.getElementById('pr-regions'),
+    prRoads: document.getElementById('pr-roads'),
   };
 
   let config = loadConfig();
   let projects = [];
+  let regionsCache = [];
   let eventDialogProject = null;
+  let editingProjectId = null;
 
   function loadConfig() {
     try {
@@ -137,15 +165,32 @@
 
   async function loadRegions() {
     try {
-      const regions = await apiFetch('/viable/v1/regions');
-      regions.forEach((r) => {
+      regionsCache = await apiFetch('/viable/v1/regions');
+      regionsCache.forEach((r) => {
         const opt = document.createElement('option');
         opt.value = r.id;
         opt.textContent = '—'.repeat(r.depth) + ' ' + r.name;
         els.filterRegion.appendChild(opt);
+
+        const opt2 = opt.cloneNode(true);
+        els.prRegions.appendChild(opt2);
       });
     } catch (e) {
       // Silencioso: si falla, el filtro de región simplemente queda en "Todas".
+    }
+  }
+
+  async function loadRoads() {
+    try {
+      const roads = await apiFetch('/wp/v2/tags?per_page=100&orderby=name&order=asc');
+      roads.forEach((r) => {
+        const opt = document.createElement('option');
+        opt.value = r.id;
+        opt.textContent = r.name;
+        els.prRoads.appendChild(opt);
+      });
+    } catch (e) {
+      // Silencioso: si falla, el selector de rutas queda vacío.
     }
   }
 
@@ -228,6 +273,7 @@
         <td>${lastEvent}</td>
         <td>${p.last_verified_on ? escapeHtml(p.last_verified_on) : '<span class="hint">—</span>'}</td>
         <td class="row-actions">
+          <button class="btn-icon btn-edit-project" title="Editar proyecto">✏️</button>
           <button class="btn-icon btn-add-event" title="Agregar evento">+ Evento</button>
           <a class="btn-icon btn-google" title="Buscar en Google" href="${googleSearchUrl(p)}" target="_blank" rel="noopener">🔎</a>
         </td>
@@ -235,6 +281,7 @@
 
       tr.querySelector('.row-check').addEventListener('change', updateBulkBar);
       tr.querySelector('.btn-add-event').addEventListener('click', () => openEventDialog(p));
+      tr.querySelector('.btn-edit-project').addEventListener('click', () => openProjectDialog(p.id));
 
       els.tbody.appendChild(tr);
     });
@@ -342,6 +389,155 @@
     els.eventFormMsg.className = 'form-msg ' + (isError ? 'error' : 'success');
   }
 
+  // ---- Popup de nuevo/editar proyecto ----
+
+  // ACF no normaliza los date_picker al guardar: según cómo se haya cargado
+  // cada fecha, el valor crudo puede venir como "Ymd" (wp-admin clásico) o
+  // como ISO "Y-m-d" (código nuestro). Este helper soporta ambos para poder
+  // precargar un <input type="date">.
+  function normalizeDateForInput(raw) {
+    if (!raw) return '';
+    const s = String(raw);
+    if (/^\d{8}$/.test(s)) {
+      return s.slice(0, 4) + '-' + s.slice(4, 6) + '-' + s.slice(6, 8);
+    }
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+      return s.slice(0, 10);
+    }
+    return '';
+  }
+
+  function resetProjectForm() {
+    els.projectForm.reset();
+    Array.from(els.prRegions.options).forEach((o) => { o.selected = false; });
+    Array.from(els.prRoads.options).forEach((o) => { o.selected = false; });
+    els.prDuplicationTypeWrap.hidden = true;
+    els.projectFormMsg.textContent = '';
+    els.projectFormMsg.className = 'form-msg';
+  }
+
+  function selectOptionsByIds(select, ids) {
+    const idSet = new Set((ids || []).map(String));
+    Array.from(select.options).forEach((o) => { o.selected = idSet.has(o.value); });
+  }
+
+  function populateProjectForm(full) {
+    const acf = full.acf || {};
+    els.prTitle.value = full.title ? full.title.raw : '';
+    els.prCode.value = acf.code || '';
+    els.prShortDescription.value = acf.short_description || '';
+    els.prType.value = acf.type || '';
+    els.prDuplicationTypeWrap.hidden = acf.type !== 'Duplicación';
+    els.prDuplicationType.value = acf.duplication_type || '';
+    els.prLength.value = acf.length || acf.length === 0 ? acf.length : '';
+    els.prSections.value = acf.sections || '';
+    els.prState.value = acf.state || 'Proyecto';
+    els.prProgress.value = (acf.progress || acf.progress === 0) ? acf.progress : '';
+    els.prProgressUpdatedOn.value = normalizeDateForInput(acf.progress_updated_on);
+    els.prLastVerifiedOn.value = normalizeDateForInput(acf.last_verified_on);
+    els.prDuration.value = acf.duration || acf.duration === 0 ? acf.duration : '';
+    els.prBidDate.value = normalizeDateForInput(acf.bid_date);
+    els.prAwardDate.value = normalizeDateForInput(acf.award_date);
+    els.prStartDate.value = normalizeDateForInput(acf.start_date);
+    els.prEndDate.value = normalizeDateForInput(acf.end_date);
+    selectOptionsByIds(els.prRegions, acf.regions);
+    selectOptionsByIds(els.prRoads, acf.roads);
+  }
+
+  els.prType.addEventListener('change', () => {
+    els.prDuplicationTypeWrap.hidden = els.prType.value !== 'Duplicación';
+  });
+
+  async function openProjectDialog(projectId) {
+    editingProjectId = projectId || null;
+    resetProjectForm();
+
+    if (!projectId) {
+      els.projectDialogTitle.textContent = 'Nuevo proyecto';
+      els.prState.value = 'Proyecto';
+      els.projectDialog.showModal();
+      return;
+    }
+
+    els.projectDialogTitle.textContent = 'Editar proyecto';
+    els.projectDialog.showModal();
+
+    try {
+      const full = await apiFetch('/wp/v2/project/' + projectId + '?context=edit');
+      populateProjectForm(full);
+    } catch (e) {
+      showProjectFormMessage('No se pudo cargar el proyecto: ' + e.message, true);
+    }
+  }
+
+  els.btnNewProject.addEventListener('click', () => openProjectDialog(null));
+  els.btnCancelProject.addEventListener('click', () => els.projectDialog.close());
+
+  function selectedOptionValues(select) {
+    return Array.from(select.selectedOptions).map((o) => Number(o.value));
+  }
+
+  els.projectForm.addEventListener('submit', async (evt) => {
+    evt.preventDefault();
+    showProjectFormMessage('', false);
+
+    const roads = selectedOptionValues(els.prRoads);
+    if (!roads.length) {
+      showProjectFormMessage('Elegí al menos una ruta.', true);
+      return;
+    }
+
+    const acf = {
+      code: els.prCode.value.trim(),
+      short_description: els.prShortDescription.value.trim(),
+      state: els.prState.value,
+      roads: roads,
+    };
+    // Select con opción vacía ("— sin especificar —") o listas de taxonomía
+    // vacías: si no hay valor, omitir la clave en vez de mandar "" o [] —
+    // ACF exige al menos 1 item / una de las choices definidas, así que
+    // mandar el "vacío" explícito rompe la request.
+    const regions = selectedOptionValues(els.prRegions);
+    if (regions.length) acf.regions = regions;
+    if (els.prType.value) acf.type = els.prType.value;
+    if (!els.prDuplicationTypeWrap.hidden && els.prDuplicationType.value) {
+      acf.duplication_type = els.prDuplicationType.value;
+    }
+    if (els.prLength.value !== '') acf.length = Number(els.prLength.value);
+    if (els.prSections.value.trim() !== '') acf.sections = els.prSections.value.trim();
+    if (els.prProgress.value !== '') acf.progress = Number(els.prProgress.value);
+    if (els.prDuration.value !== '') acf.duration = Number(els.prDuration.value);
+    if (els.prProgressUpdatedOn.value) acf.progress_updated_on = els.prProgressUpdatedOn.value;
+    if (els.prLastVerifiedOn.value) acf.last_verified_on = els.prLastVerifiedOn.value;
+    if (els.prBidDate.value) acf.bid_date = els.prBidDate.value;
+    if (els.prAwardDate.value) acf.award_date = els.prAwardDate.value;
+    if (els.prStartDate.value) acf.start_date = els.prStartDate.value;
+    if (els.prEndDate.value) acf.end_date = els.prEndDate.value;
+
+    const payload = {
+      title: els.prTitle.value.trim(),
+      status: 'publish',
+      acf: acf,
+    };
+
+    try {
+      const path = editingProjectId ? '/wp/v2/project/' + editingProjectId : '/wp/v2/project';
+      await apiFetch(path, {
+        method: editingProjectId ? 'PUT' : 'POST',
+        body: JSON.stringify(payload),
+      });
+      els.projectDialog.close();
+      await loadProjects();
+    } catch (e) {
+      showProjectFormMessage(e.message, true);
+    }
+  });
+
+  function showProjectFormMessage(text, isError) {
+    els.projectFormMsg.textContent = text;
+    els.projectFormMsg.className = 'form-msg ' + (isError ? 'error' : 'success');
+  }
+
   // ---- Init ----
 
   function init() {
@@ -350,6 +546,7 @@
       return;
     }
     loadRegions();
+    loadRoads();
     loadProjects();
   }
 

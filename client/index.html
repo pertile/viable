@@ -60,6 +60,9 @@
   </section>
 
   <section class="panel table-panel">
+    <div class="table-panel-header">
+      <button id="btn-new-project" class="btn-primary">+ Nuevo proyecto</button>
+    </div>
     <table id="projects-table">
       <thead>
         <tr>
@@ -125,6 +128,112 @@
       <button type="submit" id="btn-save-event" class="btn-primary">Guardar evento</button>
     </div>
     <p id="event-form-msg" class="form-msg"></p>
+  </form>
+</dialog>
+
+<dialog id="project-dialog">
+  <form id="project-form" method="dialog">
+    <h2 id="project-dialog-title">Nuevo proyecto</h2>
+    <p class="hint">Imagen, mapa, pliego de licitación y proyecto padre se siguen editando desde wp-admin.</p>
+
+    <fieldset class="dialog-section">
+      <legend>Datos generales</legend>
+      <label>Nombre *
+        <input type="text" id="pr-title" required>
+      </label>
+      <label>Código *
+        <input type="text" id="pr-code" required>
+      </label>
+      <label>Resumen *
+        <textarea id="pr-short-description" rows="2" required></textarea>
+      </label>
+      <label>Tipo
+        <select id="pr-type">
+          <option value="">— sin especificar —</option>
+          <option>Pavimentación</option>
+          <option>Apertura</option>
+          <option>Duplicación</option>
+          <option>Colectoras</option>
+          <option>Ampliación carriles</option>
+          <option>Puente</option>
+          <option>Rotonda</option>
+          <option>Túnel</option>
+        </select>
+      </label>
+      <label id="pr-duplication-type-wrap" hidden>Tipo de duplicación
+        <select id="pr-duplication-type">
+          <option value="">— sin especificar —</option>
+          <option>Autopista</option>
+          <option>Autovía</option>
+          <option>Travesía urbana</option>
+        </select>
+      </label>
+      <label>Longitud (km)
+        <input type="number" id="pr-length" step="any">
+      </label>
+      <label>Tramos
+        <input type="text" id="pr-sections">
+      </label>
+    </fieldset>
+
+    <fieldset class="dialog-section">
+      <legend>Estado y avance</legend>
+      <label>Estado *
+        <select id="pr-state" required>
+          <option>Proyecto</option>
+          <option>En licitación</option>
+          <option>Adjudicado</option>
+          <option>En obras</option>
+          <option>Paralizado</option>
+          <option>Finalizado</option>
+          <option>Cancelado</option>
+        </select>
+      </label>
+      <label>Avance (%)
+        <input type="number" id="pr-progress" min="0" max="100" step="1">
+      </label>
+      <label>Última actualización de avance
+        <input type="date" id="pr-progress-updated-on">
+      </label>
+      <label>Última constatación
+        <input type="date" id="pr-last-verified-on">
+      </label>
+    </fieldset>
+
+    <fieldset class="dialog-section">
+      <legend>Fechas y plazos</legend>
+      <label>Plazo (meses)
+        <input type="number" id="pr-duration" min="0" step="1">
+      </label>
+      <label>Fecha de licitación
+        <input type="date" id="pr-bid-date">
+      </label>
+      <label>Fecha de adjudicación
+        <input type="date" id="pr-award-date">
+      </label>
+      <label>Inicio de construcción
+        <input type="date" id="pr-start-date">
+      </label>
+      <label>Finalización
+        <input type="date" id="pr-end-date">
+      </label>
+    </fieldset>
+
+    <fieldset class="dialog-section">
+      <legend>Clasificación</legend>
+      <label>Regiones
+        <select id="pr-regions" multiple size="4"></select>
+      </label>
+      <label>Rutas *
+        <select id="pr-roads" multiple size="4" required></select>
+      </label>
+    </fieldset>
+
+    <div class="actions">
+      <button type="button" id="btn-cancel-project" class="btn-link">Cancelar</button>
+      <button type="submit" id="btn-save-project" class="btn-primary">Guardar proyecto</button>
+    </div>
+    <p id="project-form-msg" class="form-msg"></p>
   </form>
 </dialog>
 

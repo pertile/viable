@@ -159,6 +159,12 @@ fieldset legend { font-size: 0.8rem; color: var(--muted); padding: 0 0.25rem; }
 
 .table-panel { padding: 0; overflow-x: auto; }
 
+.table-panel-header {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.75rem 0.75rem 0;
+}
+
 table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
 
 thead th {
@@ -241,3 +247,37 @@ dialog#event-dialog h2 {
   margin-top: 0;
   font-size: 1.05rem;
 }
+
+dialog#project-dialog {
+  border: none;
+  border-radius: 10px;
+  padding: 1.5rem;
+  width: min(640px, 94vw);
+  max-height: 88vh;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+}
+
+dialog#project-dialog::backdrop {
+  background: rgba(20, 24, 30, 0.45);
+}
+
+dialog#project-dialog h2 {
+  margin-top: 0;
+  font-size: 1.05rem;
+}
+
+.dialog-section {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin: 0 0 0.9rem;
+  padding: 0.75rem 0.9rem 0.3rem;
+}
+
+.dialog-section legend {
+  font-size: 0.8rem;
+  color: var(--muted);
+  padding: 0 0.25rem;
+  font-weight: 600;
+}
+
+select[multiple] { height: auto; }
