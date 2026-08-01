@@ -224,9 +224,12 @@
       <label>Regiones
         <select id="pr-regions" multiple size="4"></select>
       </label>
-      <label>Rutas *
-        <select id="pr-roads" multiple size="4" required></select>
-      </label>
+      <label>Rutas *</label>
+      <div class="tag-picker">
+        <div id="pr-roads-chips" class="tag-chips"></div>
+        <input type="text" id="pr-roads-search" placeholder="Buscar ruta por nombre..." autocomplete="off">
+        <ul id="pr-roads-results" class="tag-results"></ul>
+      </div>
     </fieldset>
 
     <div class="actions">

@@ -62,12 +62,16 @@
     prStartDate: document.getElementById('pr-start-date'),
     prEndDate: document.getElementById('pr-end-date'),
     prRegions: document.getElementById('pr-regions'),
-    prRoads: document.getElementById('pr-roads'),
+    prRoadsChips: document.getElementById('pr-roads-chips'),
+    prRoadsSearch: document.getElementById('pr-roads-search'),
+    prRoadsResults: document.getElementById('pr-roads-results'),
   };
 
   let config = loadConfig();
   let projects = [];
   let regionsCache = [];
+  let allRoadsCache = [];
+  let selectedRoads = [];
   let eventDialogProject = null;
   let editingProjectId = null;
 
@@ -182,17 +186,80 @@
 
   async function loadRoads() {
     try {
-      const roads = await apiFetch('/wp/v2/tags?per_page=100&orderby=name&order=asc');
-      roads.forEach((r) => {
-        const opt = document.createElement('option');
-        opt.value = r.id;
-        opt.textContent = r.name;
-        els.prRoads.appendChild(opt);
-      });
+      allRoadsCache = await apiFetch('/wp/v2/tags?per_page=100&orderby=name&order=asc');
     } catch (e) {
-      // Silencioso: si falla, el selector de rutas queda vacío.
+      // Silencioso: si falla, el buscador de rutas queda sin resultados hasta reintentar.
     }
   }
+
+  // ---- Selector de rutas (tags) con búsqueda y creación ----
+
+  function renderRoadChips() {
+    els.prRoadsChips.innerHTML = '';
+    selectedRoads.forEach((r) => {
+      const chip = document.createElement('span');
+      chip.className = 'tag-chip';
+      chip.innerHTML = `${escapeHtml(r.name)} <button type="button" aria-label="Quitar">×</button>`;
+      chip.querySelector('button').addEventListener('click', () => {
+        selectedRoads = selectedRoads.filter((x) => x.id !== r.id);
+        renderRoadChips();
+      });
+      els.prRoadsChips.appendChild(chip);
+    });
+  }
+
+  function addRoad(road) {
+    if (!selectedRoads.some((r) => r.id === road.id)) {
+      selectedRoads.push(road);
+    }
+    els.prRoadsSearch.value = '';
+    els.prRoadsResults.innerHTML = '';
+    renderRoadChips();
+    els.prRoadsSearch.focus();
+  }
+
+  async function createAndAddRoad(name) {
+    try {
+      const created = await apiFetch('/wp/v2/tags', {
+        method: 'POST',
+        body: JSON.stringify({ name: name }),
+      });
+      allRoadsCache.push(created);
+      addRoad({ id: created.id, name: created.name });
+    } catch (e) {
+      showProjectFormMessage('No se pudo crear la ruta: ' + e.message, true);
+    }
+  }
+
+  function renderRoadResults(query) {
+    const q = query.trim().toLowerCase();
+    els.prRoadsResults.innerHTML = '';
+
+    if (!q) return;
+
+    const selectedIds = new Set(selectedRoads.map((r) => r.id));
+    const matches = allRoadsCache
+      .filter((r) => !selectedIds.has(r.id) && r.name.toLowerCase().includes(q))
+      .slice(0, 8);
+
+    matches.forEach((r) => {
+      const li = document.createElement('li');
+      li.textContent = r.name;
+      li.addEventListener('click', () => addRoad({ id: r.id, name: r.name }));
+      els.prRoadsResults.appendChild(li);
+    });
+
+    const exactMatch = allRoadsCache.some((r) => r.name.toLowerCase() === q);
+    if (!exactMatch) {
+      const li = document.createElement('li');
+      li.className = 'tag-create-option';
+      li.textContent = '+ Crear ruta "' + query.trim() + '"';
+      li.addEventListener('click', () => createAndAddRoad(query.trim()));
+      els.prRoadsResults.appendChild(li);
+    }
+  }
+
+  els.prRoadsSearch.addEventListener('input', () => renderRoadResults(els.prRoadsSearch.value));
 
   els.filterRegion.addEventListener('change', loadProjects);
 
@@ -410,7 +477,10 @@
   function resetProjectForm() {
     els.projectForm.reset();
     Array.from(els.prRegions.options).forEach((o) => { o.selected = false; });
-    Array.from(els.prRoads.options).forEach((o) => { o.selected = false; });
+    selectedRoads = [];
+    els.prRoadsSearch.value = '';
+    els.prRoadsResults.innerHTML = '';
+    renderRoadChips();
     els.prDuplicationTypeWrap.hidden = true;
     els.projectFormMsg.textContent = '';
     els.projectFormMsg.className = 'form-msg';
@@ -441,7 +511,12 @@
     els.prStartDate.value = normalizeDateForInput(acf.start_date);
     els.prEndDate.value = normalizeDateForInput(acf.end_date);
     selectOptionsByIds(els.prRegions, acf.regions);
-    selectOptionsByIds(els.prRoads, acf.roads);
+
+    selectedRoads = (acf.roads || []).map((id) => {
+      const found = allRoadsCache.find((r) => r.id === id);
+      return found ? { id: found.id, name: found.name } : { id: id, name: 'Ruta #' + id };
+    });
+    renderRoadChips();
   }
 
   els.prType.addEventListener('change', () => {
@@ -481,8 +556,7 @@
     evt.preventDefault();
     showProjectFormMessage('', false);
 
-    const roads = selectedOptionValues(els.prRoads);
-    if (!roads.length) {
+    if (!selectedRoads.length) {
       showProjectFormMessage('Elegí al menos una ruta.', true);
       return;
     }
@@ -491,7 +565,7 @@
       code: els.prCode.value.trim(),
       short_description: els.prShortDescription.value.trim(),
       state: els.prState.value,
-      roads: roads,
+      roads: selectedRoads.map((r) => r.id),
     };
     // Select con opción vacía ("— sin especificar —") o listas de taxonomía
     // vacías: si no hay valor, omitir la clave en vez de mandar "" o [] —

@@ -281,3 +281,60 @@ dialog#project-dialog h2 {
 }
 
 select[multiple] { height: auto; }
+
+/* ---- Tag picker (Rutas) ---- */
+
+.tag-picker { margin-bottom: 0.75rem; }
+
+.tag-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.4rem;
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #e4e9ee;
+  color: var(--text);
+  border-radius: 999px;
+  padding: 0.2rem 0.4rem 0.2rem 0.7rem;
+  font-size: 0.82rem;
+}
+
+.tag-chip button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1;
+  color: var(--muted);
+  padding: 0.1rem 0.3rem;
+}
+
+.tag-chip button:hover { color: var(--danger); }
+
+.tag-results {
+  list-style: none;
+  margin: 0.25rem 0 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.tag-results:empty { border: none; }
+
+.tag-results li {
+  padding: 0.4rem 0.6rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.tag-results li:last-child { border-bottom: none; }
+.tag-results li:hover { background: #eef3fa; }
+.tag-results li.tag-create-option { color: var(--primary); font-weight: 600; }
