@@ -109,6 +109,17 @@ function viable_add_cors_headers_for_events_api($served, $result, $request, $ser
         return $served;
     }
 
+    // Evitar que un cache de página (LiteSpeed Cache, etc.) guarde esta
+    // respuesta: si queda cacheada sin el header CORS de abajo (por ejemplo,
+    // porque la primera vez se pidió sin Origin), el cliente local se rompe
+    // con "NetworkError" de forma intermitente. Además, estos endpoints
+    // devuelven datos que cambian con cada evento cargado, así que tampoco
+    // conviene servir una copia vieja.
+    nocache_headers();
+    if (function_exists('do_action')) {
+        do_action('litespeed_control_set_nocache', 'viable REST API: respuesta dinámica, no cachear');
+    }
+
     $origin = get_http_origin();
     if ($origin && in_array($origin, VIABLE_LOCAL_APP_ORIGINS, true)) {
         header('Access-Control-Allow-Origin: ' . $origin);
