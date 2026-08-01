@@ -186,9 +186,20 @@
 
   async function loadRoads() {
     try {
-      allRoadsCache = await apiFetch('/wp/v2/tags?per_page=100&orderby=name&order=asc');
+      // /wp/v2/tags limita a 100 por página — hay más de 100 rutas cargadas,
+      // así que hay que recorrer todas las páginas o el buscador/creador
+      // termina ofreciendo "crear" rutas que en realidad ya existen.
+      const all = [];
+      let page = 1;
+      while (true) {
+        const batch = await apiFetch('/wp/v2/tags?per_page=100&orderby=name&order=asc&page=' + page);
+        all.push(...batch);
+        if (batch.length < 100) break;
+        page++;
+      }
+      allRoadsCache = all;
     } catch (e) {
-      // Silencioso: si falla, el buscador de rutas queda sin resultados hasta reintentar.
+      console.error('No se pudieron cargar las rutas existentes:', e);
     }
   }
 
@@ -273,11 +284,11 @@
 
   async function loadProjects() {
     if (!isConfigured()) {
-      els.tbody.innerHTML = '<tr><td colspan="9" class="hint">Configurá la conexión primero.</td></tr>';
+      els.tbody.innerHTML = '<tr><td colspan="10" class="hint">Configurá la conexión primero.</td></tr>';
       return;
     }
 
-    els.tbody.innerHTML = '<tr><td colspan="9" class="hint">Cargando...</td></tr>';
+    els.tbody.innerHTML = '<tr><td colspan="10" class="hint">Cargando...</td></tr>';
 
     const states = getSelectedStates();
     const region = els.filterRegion.value;
@@ -291,7 +302,7 @@
       projects = await apiFetch('/viable/v1/projects-dashboard?' + params.toString());
       renderTable();
     } catch (e) {
-      els.tbody.innerHTML = '<tr><td colspan="9" class="form-msg error">' + escapeHtml(e.message) + '</td></tr>';
+      els.tbody.innerHTML = '<tr><td colspan="10" class="form-msg error">' + escapeHtml(e.message) + '</td></tr>';
     }
   }
 
@@ -316,7 +327,7 @@
     updateBulkBar();
 
     if (!projects.length) {
-      els.tbody.innerHTML = '<tr><td colspan="9" class="hint">No hay proyectos con estos filtros.</td></tr>';
+      els.tbody.innerHTML = '<tr><td colspan="10" class="hint">No hay proyectos con estos filtros.</td></tr>';
       return;
     }
 
@@ -329,12 +340,14 @@
         : '<span class="hint">—</span>';
 
       const regionsText = p.regions && p.regions.length ? escapeHtml(p.regions.join(', ')) : '<span class="hint">—</span>';
+      const roadsText = p.roads && p.roads.length ? escapeHtml(p.roads.join(', ')) : '<span class="hint">—</span>';
 
       tr.innerHTML = `
         <td><input type="checkbox" class="row-check" data-id="${p.id}"></td>
         <td>${p.code ? escapeHtml(p.code) : '<span class="hint">—</span>'}</td>
         <td>${escapeHtml(p.title)}</td>
         <td>${regionsText}</td>
+        <td>${roadsText}</td>
         <td><span class="state-tag state-${escapeHtml((p.state || '').toLowerCase())}">${escapeHtml(p.state || '—')}</span></td>
         <td>${p.progress !== null && p.progress !== '' ? escapeHtml(String(p.progress)) + '%' : '—'}</td>
         <td>${lastEvent}</td>

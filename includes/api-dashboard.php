@@ -162,6 +162,15 @@ function viable_get_projects_dashboard($request) {
             }
         }
 
+        $road_ids = viable_normalize_region_ids(get_field('roads', $id));
+        $road_names = [];
+        foreach ($road_ids as $rid) {
+            $term = get_term($rid);
+            if ($term && !is_wp_error($term)) {
+                $road_names[] = $term->name;
+            }
+        }
+
         $latest_event = viable_get_latest_project_event($id);
 
         $results[] = [
@@ -171,6 +180,7 @@ function viable_get_projects_dashboard($request) {
             'state' => get_field('state', $id),
             'progress' => get_field('progress', $id),
             'regions' => $region_names,
+            'roads' => $road_names,
             'last_verified_on' => get_field('last_verified_on', $id) ?: null,
             'last_event' => $latest_event ? [
                 'date' => $latest_event['date']->format('d/m/Y'),
