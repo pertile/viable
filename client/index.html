@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proyectos — viable</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <h1>Proyectos</h1>
+  <button id="btn-settings" class="btn-link">Configuración</button>
+</header>
+
+<section id="settings-panel" class="panel" hidden>
+  <h2>Configuración</h2>
+  <label>URL del sitio
+    <input type="text" id="cfg-site-url" placeholder="http://viable.local">
+  </label>
+  <label>Usuario
+    <input type="text" id="cfg-username" placeholder="admin">
+  </label>
+  <label>Application Password
+    <input type="text" id="cfg-app-password" placeholder="xxxx xxxx xxxx xxxx xxxx xxxx">
+  </label>
+  <div class="actions">
+    <button id="btn-save-settings" class="btn-primary">Guardar</button>
+  </div>
+  <p class="hint">Se genera en wp-admin → Usuarios → Tu perfil → Application Passwords.</p>
+</section>
+
+<main>
+  <section class="panel filters-panel">
+    <div class="filters-row">
+      <label class="filter-region">Región
+        <select id="filter-region">
+          <option value="">Todas las regiones</option>
+        </select>
+      </label>
+
+      <label class="filter-code">Código
+        <input type="text" id="filter-code" placeholder="ej. H13-2">
+      </label>
+
+      <fieldset id="filter-states" class="filter-states">
+        <legend>Estados</legend>
+        <!-- checkboxes generados por JS -->
+      </fieldset>
+    </div>
+  </section>
+
+  <section id="bulk-bar" class="panel bulk-bar" hidden>
+    <span id="bulk-count">0 proyectos seleccionados</span>
+    <label>Fecha de constatación
+      <input type="date" id="bulk-date">
+    </label>
+    <button id="btn-bulk-verify" class="btn-primary">Actualizar última constatación</button>
+    <span id="bulk-msg" class="form-msg"></span>
+  </section>
+
+  <section class="panel table-panel">
+    <table id="projects-table">
+      <thead>
+        <tr>
+          <th><input type="checkbox" id="select-all"></th>
+          <th>Código</th>
+          <th>Nombre</th>
+          <th>Región</th>
+          <th>Estado</th>
+          <th>Avance</th>
+          <th>Último evento</th>
+          <th>Última constatación</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="projects-tbody">
+        <tr><td colspan="9" class="hint">Cargando...</td></tr>
+      </tbody>
+    </table>
+  </section>
+</main>
+
+<dialog id="event-dialog">
+  <form id="event-form" method="dialog">
+    <h2 id="event-dialog-title">Nuevo evento</h2>
+
+    <label>Fecha *
+      <input type="date" id="ev-date" required>
+    </label>
+
+    <fieldset class="url-or-text">
+      <legend>URL o texto descriptivo (uno de los dos es obligatorio) *</legend>
+      <label>URL a la noticia
+        <input type="url" id="ev-url" placeholder="https://...">
+      </label>
+      <label>Texto descriptivo
+        <textarea id="ev-description" rows="2" placeholder="Si no hay URL disponible..."></textarea>
+      </label>
+    </fieldset>
+
+    <label>Avance (%) — opcional
+      <input type="number" id="ev-progress" min="0" max="100" step="1">
+    </label>
+
+    <label>Estado — opcional
+      <select id="ev-state">
+        <option value="">— sin cambio —</option>
+        <option>Proyecto</option>
+        <option>En licitación</option>
+        <option>Adjudicado</option>
+        <option>En obras</option>
+        <option>Paralizado</option>
+        <option>Finalizado</option>
+        <option>Cancelado</option>
+      </select>
+    </label>
+
+    <label>Resumen del hecho — opcional
+      <textarea id="ev-summary" rows="2"></textarea>
+    </label>
+
+    <div class="actions">
+      <button type="button" id="btn-cancel-event" class="btn-link">Cancelar</button>
+      <button type="submit" id="btn-save-event" class="btn-primary">Guardar evento</button>
+    </div>
+    <p id="event-form-msg" class="form-msg"></p>
+  </form>
+</dialog>
+
+<script src="app.js"></script>
+</body>
+</html>
