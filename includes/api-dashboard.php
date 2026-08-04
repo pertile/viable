@@ -181,6 +181,7 @@ function viable_get_projects_dashboard($request) {
             'progress' => get_field('progress', $id),
             'regions' => $region_names,
             'roads' => $road_names,
+            'google_search' => get_field('google_search', $id) ?: null,
             'last_verified_on' => get_field('last_verified_on', $id) ?: null,
             'last_event' => $latest_event ? [
                 'date' => $latest_event['date']->format('d/m/Y'),

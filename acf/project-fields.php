@@ -227,12 +227,12 @@ add_action( 'acf/include_fields', function() {
 				'append' => '',
 			),
 			array(
-				'key' => 'field_697e08e1309f9',
-				'label' => 'Tramos',
-				'name' => 'sections',
+				'key' => 'field_697f0200googlesearch',
+				'label' => 'Búsqueda en Google',
+				'name' => 'google_search',
 				'aria-label' => '',
 				'type' => 'text',
-				'instructions' => '',
+				'instructions' => 'Texto a usar para el botón de búsqueda en Google del panel local. Si se deja vacío, se usa el nombre del proyecto.',
 				'required' => 0,
 				'conditional_logic' => 0,
 				'wrapper' => array(

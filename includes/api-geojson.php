@@ -556,19 +556,24 @@ function viable_get_map_projects($request) {
             ];
         }
 
-        $projects_list[] = [
-            'code'              => $code,
-            'name'              => get_the_title($pid),
-            'type_display'      => $proj_type_disp,
-            'short_description' => get_field('short_description', $pid),
-            'url'               => get_permalink($pid),
-            'state'             => get_field('state', $pid),
-            'type'              => $proj_type,
-            'last_post'         => $latest_post_info,
-            'parent_id'         => $parent_id,
-            'parent_name'       => $parent_id ? get_the_title($parent_id) : null,
-            'parent_url'        => $parent_id ? get_permalink($parent_id) : null,
-        ];
+        // Excluir del listado los proyectos sin texto de artículo (post_content vacío)
+        $article_text = trim(wp_strip_all_tags(str_replace('&nbsp;', ' ', get_post_field('post_content', $pid))));
+
+        if ($article_text !== '') {
+            $projects_list[] = [
+                'code'              => $code,
+                'name'              => get_the_title($pid),
+                'type_display'      => $proj_type_disp,
+                'short_description' => get_field('short_description', $pid),
+                'url'               => get_permalink($pid),
+                'state'             => get_field('state', $pid),
+                'type'              => $proj_type,
+                'last_post'         => $latest_post_info,
+                'parent_id'         => $parent_id,
+                'parent_name'       => $parent_id ? get_the_title($parent_id) : null,
+                'parent_url'        => $parent_id ? get_permalink($parent_id) : null,
+            ];
+        }
 
         // Buscar geometría
         $stmt = $db->prepare("SELECT * FROM {$table_name} WHERE code = :code");

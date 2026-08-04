@@ -51,7 +51,7 @@
     prDuplicationTypeWrap: document.getElementById('pr-duplication-type-wrap'),
     prDuplicationType: document.getElementById('pr-duplication-type'),
     prLength: document.getElementById('pr-length'),
-    prSections: document.getElementById('pr-sections'),
+    prGoogleSearch: document.getElementById('pr-google-search'),
     prState: document.getElementById('pr-state'),
     prProgress: document.getElementById('pr-progress'),
     prProgressUpdatedOn: document.getElementById('pr-progress-updated-on'),
@@ -74,6 +74,8 @@
   let selectedRoads = [];
   let eventDialogProject = null;
   let editingProjectId = null;
+  let editingEventId = null;
+  const expandedProjectIds = new Set();
 
   function loadConfig() {
     try {
@@ -151,14 +153,14 @@
 
   // ---- Filtros ----
 
-  function buildStateCheckboxes() {
+  function buildStateCheckboxes(initialStates) {
     els.filterStates.querySelectorAll('label').forEach((l) => l.remove());
     STATE_CHOICES.forEach((state) => {
       const label = document.createElement('label');
       label.className = 'inline-check';
-      const checked = DEFAULT_EXCLUDED_STATES.indexOf(state) === -1;
+      const checked = initialStates ? initialStates.includes(state) : DEFAULT_EXCLUDED_STATES.indexOf(state) === -1;
       label.innerHTML = `<input type="checkbox" value="${escapeHtml(state)}" ${checked ? 'checked' : ''}> ${escapeHtml(state)}`;
-      label.querySelector('input').addEventListener('change', loadProjects);
+      label.querySelector('input').addEventListener('change', onFiltersChanged);
       els.filterStates.appendChild(label);
     });
   }
@@ -272,12 +274,33 @@
 
   els.prRoadsSearch.addEventListener('input', () => renderRoadResults(els.prRoadsSearch.value));
 
-  els.filterRegion.addEventListener('change', loadProjects);
+  // ---- Filtros en la URL ----
+  // Así se puede recargar la página o compartir el link sin perder los
+  // filtros aplicados (región, código, estados seleccionados).
+
+  function updateUrlFromFilters() {
+    const params = new URLSearchParams();
+    const states = getSelectedStates();
+    const region = els.filterRegion.value;
+    const code = els.filterCode.value.trim();
+    if (states.length) params.set('states', states.join(','));
+    if (region) params.set('region', region);
+    if (code) params.set('code', code);
+    const qs = params.toString();
+    history.replaceState(null, '', location.pathname + (qs ? '?' + qs : ''));
+  }
+
+  function onFiltersChanged() {
+    updateUrlFromFilters();
+    loadProjects();
+  }
+
+  els.filterRegion.addEventListener('change', onFiltersChanged);
 
   let codeFilterTimer = null;
   els.filterCode.addEventListener('input', () => {
     clearTimeout(codeFilterTimer);
-    codeFilterTimer = setTimeout(loadProjects, 300);
+    codeFilterTimer = setTimeout(onFiltersChanged, 300);
   });
 
   // ---- Tabla de proyectos ----
@@ -307,19 +330,19 @@
   }
 
   function googleSearchUrl(project) {
-    const q = encodeURIComponent(project.title);
-    let url = 'https://www.google.com/search?q=' + q;
+    let q = (project.google_search && project.google_search.trim()) || project.title;
     if (project.last_verified_on) {
       const parts = project.last_verified_on.split('/'); // d/m/Y
       if (parts.length === 3) {
         const [d, m, y] = parts;
-        const minDate = m + '/' + d + '/' + y; // Google usa MM/DD/YYYY en tbs
-        const today = new Date();
-        const maxDate = (today.getMonth() + 1) + '/' + today.getDate() + '/' + today.getFullYear();
-        url += '&tbs=cdr:1,cd_min:' + minDate + ',cd_max:' + maxDate;
+        q += ' after:' + y + '-' + m.padStart(2, '0') + '-' + d.padStart(2, '0');
       }
     }
-    return url;
+    return 'https://www.google.com/search?q=' + encodeURIComponent(q);
+  }
+
+  function wpAdminEditUrl(projectId) {
+    return config.siteUrl.replace(/\/$/, '') + '/wp-admin/post.php?post=' + projectId + '&action=edit';
   }
 
   function renderTable() {
@@ -353,7 +376,9 @@
         <td>${lastEvent}</td>
         <td>${p.last_verified_on ? escapeHtml(p.last_verified_on) : '<span class="hint">—</span>'}</td>
         <td class="row-actions">
+          <button class="btn-icon btn-toggle-events" title="Ver eventos">${expandedProjectIds.has(p.id) ? '▾' : '▸'}</button>
           <button class="btn-icon btn-edit-project" title="Editar proyecto">✏️</button>
+          <a class="btn-icon btn-wp-edit" title="Editar en WordPress" href="${wpAdminEditUrl(p.id)}" target="_blank" rel="noopener">📝</a>
           <button class="btn-icon btn-add-event" title="Agregar evento">+ Evento</button>
           <a class="btn-icon btn-google" title="Buscar en Google" href="${googleSearchUrl(p)}" target="_blank" rel="noopener">🔎</a>
         </td>
@@ -363,7 +388,97 @@
       tr.querySelector('.btn-add-event').addEventListener('click', () => openEventDialog(p));
       tr.querySelector('.btn-edit-project').addEventListener('click', () => openProjectDialog(p.id));
 
+      const toggleBtn = tr.querySelector('.btn-toggle-events');
+      toggleBtn.addEventListener('click', () => {
+        if (expandedProjectIds.has(p.id)) {
+          expandedProjectIds.delete(p.id);
+          removeEventsRow(p.id);
+          toggleBtn.textContent = '▸';
+        } else {
+          expandedProjectIds.add(p.id);
+          toggleBtn.textContent = '▾';
+          expandEvents(p, tr);
+        }
+      });
+
       els.tbody.appendChild(tr);
+      if (expandedProjectIds.has(p.id)) {
+        expandEvents(p, tr);
+      }
+    });
+  }
+
+  // ---- Eventos desplegados por proyecto ----
+
+  function removeEventsRow(projectId) {
+    const existing = els.tbody.querySelector('.events-row[data-project-id="' + projectId + '"]');
+    if (existing) existing.remove();
+  }
+
+  function formatIsoToDmy(iso) {
+    if (!iso) return '';
+    const [y, m, d] = iso.split('-');
+    return d + '/' + m + '/' + y;
+  }
+
+  async function expandEvents(project, rowEl) {
+    removeEventsRow(project.id);
+
+    const tr = document.createElement('tr');
+    tr.className = 'events-row';
+    tr.dataset.projectId = project.id;
+    const td = document.createElement('td');
+    td.colSpan = 10;
+    td.innerHTML = '<div class="events-panel hint">Cargando eventos...</div>';
+    tr.appendChild(td);
+    rowEl.after(tr);
+
+    try {
+      const events = await apiFetch('/wp/v2/project-events?project=' + project.id + '&per_page=100');
+      events.sort((a, b) => {
+        const dateA = normalizeDateForInput((a.acf || {}).event_date);
+        const dateB = normalizeDateForInput((b.acf || {}).event_date);
+        return dateB.localeCompare(dateA);
+      });
+      renderEventsPanel(td, project, events);
+    } catch (e) {
+      td.innerHTML = '<div class="events-panel form-msg error">' + escapeHtml(e.message) + '</div>';
+    }
+  }
+
+  function renderEventsPanel(td, project, events) {
+    if (!events.length) {
+      td.innerHTML = '<div class="events-panel hint">Sin eventos cargados todavía.</div>';
+      return;
+    }
+
+    td.innerHTML = '<div class="events-panel"></div>';
+    const panel = td.querySelector('.events-panel');
+
+    events.forEach((ev) => {
+      const acf = ev.acf || {};
+      const dateDisplay = formatIsoToDmy(normalizeDateForInput(acf.event_date));
+      const text = acf.url
+        ? `<a href="${escapeHtml(acf.url)}" target="_blank" rel="noopener">${escapeHtml(acf.url)}</a>`
+        : escapeHtml(acf.description || '');
+
+      const extras = [];
+      if (acf.progress !== '' && acf.progress !== null && acf.progress !== undefined) extras.push(escapeHtml(String(acf.progress)) + '%');
+      if (acf.state) extras.push(escapeHtml(acf.state));
+
+      const item = document.createElement('div');
+      item.className = 'event-item';
+      item.innerHTML = `
+        <div class="event-item-main">
+          <span class="event-item-date">${escapeHtml(dateDisplay)}</span>
+          ${extras.length ? '<span class="event-item-extra">' + extras.join(' · ') + '</span>' : ''}
+          <button type="button" class="btn-link btn-edit-event">Editar</button>
+        </div>
+        <div class="event-item-text">${text}</div>
+        ${acf.summary ? '<div class="event-item-summary">' + escapeHtml(acf.summary) + '</div>' : ''}
+      `;
+      item.querySelector('.btn-edit-event').addEventListener('click', () => openEventDialog(project, ev));
+      panel.appendChild(item);
     });
   }
 
@@ -406,13 +521,21 @@
     }
   });
 
-  // ---- Popup de nuevo evento ----
+  // ---- Popup de nuevo/editar evento ----
 
-  function openEventDialog(project) {
+  function openEventDialog(project, editEvent) {
     eventDialogProject = project;
-    els.eventDialogTitle.textContent = 'Nuevo evento — ' + project.title;
+    editingEventId = editEvent ? editEvent.id : null;
+    const acf = (editEvent && editEvent.acf) || {};
+
+    els.eventDialogTitle.textContent = (editEvent ? 'Editar evento — ' : 'Nuevo evento — ') + project.title;
     els.eventForm.reset();
-    els.evDate.value = todayIso();
+    els.evDate.value = editEvent ? normalizeDateForInput(acf.event_date) : todayIso();
+    els.evUrl.value = acf.url || '';
+    els.evDescription.value = acf.description || '';
+    els.evProgress.value = (acf.progress || acf.progress === 0) ? acf.progress : '';
+    els.evState.value = acf.state || '';
+    els.evSummary.value = acf.summary || '';
     els.eventFormMsg.textContent = '';
     els.eventFormMsg.className = 'form-msg';
     els.eventDialog.showModal();
@@ -453,8 +576,9 @@
     };
 
     try {
-      await apiFetch('/wp/v2/project-events', {
-        method: 'POST',
+      const path = editingEventId ? '/wp/v2/project-events/' + editingEventId : '/wp/v2/project-events';
+      await apiFetch(path, {
+        method: editingEventId ? 'PUT' : 'POST',
         body: JSON.stringify(payload),
       });
       els.eventDialog.close();
@@ -513,7 +637,7 @@
     els.prDuplicationTypeWrap.hidden = acf.type !== 'Duplicación';
     els.prDuplicationType.value = acf.duplication_type || '';
     els.prLength.value = acf.length || acf.length === 0 ? acf.length : '';
-    els.prSections.value = acf.sections || '';
+    els.prGoogleSearch.value = acf.google_search || '';
     els.prState.value = acf.state || 'Proyecto';
     els.prProgress.value = (acf.progress || acf.progress === 0) ? acf.progress : '';
     els.prProgressUpdatedOn.value = normalizeDateForInput(acf.progress_updated_on);
@@ -591,7 +715,7 @@
       acf.duplication_type = els.prDuplicationType.value;
     }
     if (els.prLength.value !== '') acf.length = Number(els.prLength.value);
-    if (els.prSections.value.trim() !== '') acf.sections = els.prSections.value.trim();
+    if (els.prGoogleSearch.value.trim() !== '') acf.google_search = els.prGoogleSearch.value.trim();
     if (els.prProgress.value !== '') acf.progress = Number(els.prProgress.value);
     if (els.prDuration.value !== '') acf.duration = Number(els.prDuration.value);
     if (els.prProgressUpdatedOn.value) acf.progress_updated_on = els.prProgressUpdatedOn.value;
@@ -627,16 +751,25 @@
 
   // ---- Init ----
 
-  function init() {
+  async function init() {
     if (!isConfigured()) {
       els.settingsPanel.hidden = false;
       return;
     }
-    loadRegions();
+    await loadRegions();
+    const urlRegion = new URLSearchParams(location.search).get('region');
+    if (urlRegion) els.filterRegion.value = urlRegion;
+    updateUrlFromFilters();
     loadRoads();
     loadProjects();
   }
 
-  buildStateCheckboxes();
+  (function applyInitialFiltersFromUrl() {
+    const params = new URLSearchParams(location.search);
+    const states = params.has('states') ? params.get('states').split(',').filter(Boolean) : null;
+    buildStateCheckboxes(states);
+    els.filterCode.value = params.get('code') || '';
+  })();
+
   init();
 })();

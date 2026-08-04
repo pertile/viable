@@ -197,6 +197,33 @@ tbody tr:hover { background: #f7f9fb; }
 
 .row-actions { white-space: nowrap; }
 
+/* ---- Eventos desplegados por proyecto ---- */
+
+.events-row td { background: #f7f9fb; padding: 0.75rem 1.25rem; }
+
+.events-panel { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.event-item {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem 0.7rem;
+  background: #fff;
+}
+
+.event-item-main {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+}
+
+.event-item-date { font-weight: 600; }
+.event-item-extra { color: var(--muted); }
+.event-item-main .btn-edit-event { margin-left: auto; }
+
+.event-item-text { font-size: 0.85rem; margin-top: 0.3rem; word-break: break-word; }
+.event-item-summary { font-size: 0.8rem; color: var(--muted); margin-top: 0.2rem; }
+
 .btn-icon {
   display: inline-flex;
   align-items: center;
