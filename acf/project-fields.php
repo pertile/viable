@@ -150,6 +150,7 @@ add_action( 'acf/include_fields', function() {
 					'Duplicación' => 'Duplicación',
 					'Colectoras' => 'Colectoras',
 					'Ampliación carriles' => 'Ampliación carriles',
+					'Ensanche' => 'Ensanche',
 					'Puente' => 'Puente',
 					'Rotonda' => 'Rotonda',
 					'Túnel' => 'Túnel',

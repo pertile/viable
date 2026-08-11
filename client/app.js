@@ -30,12 +30,14 @@
     eventDialogTitle: document.getElementById('event-dialog-title'),
     eventForm: document.getElementById('event-form'),
     btnCancelEvent: document.getElementById('btn-cancel-event'),
+    btnDeleteEvent: document.getElementById('btn-delete-event'),
     evDate: document.getElementById('ev-date'),
     evUrl: document.getElementById('ev-url'),
     evDescription: document.getElementById('ev-description'),
     evProgress: document.getElementById('ev-progress'),
     evState: document.getElementById('ev-state'),
     evSummary: document.getElementById('ev-summary'),
+    evEndDate: document.getElementById('ev-end-date'),
     eventFormMsg: document.getElementById('event-form-msg'),
 
     btnNewProject: document.getElementById('btn-new-project'),
@@ -307,11 +309,11 @@
 
   async function loadProjects() {
     if (!isConfigured()) {
-      els.tbody.innerHTML = '<tr><td colspan="10" class="hint">Configurá la conexión primero.</td></tr>';
+      els.tbody.innerHTML = '<tr><td colspan="11" class="hint">Configurá la conexión primero.</td></tr>';
       return;
     }
 
-    els.tbody.innerHTML = '<tr><td colspan="10" class="hint">Cargando...</td></tr>';
+    els.tbody.innerHTML = '<tr><td colspan="11" class="hint">Cargando...</td></tr>';
 
     const states = getSelectedStates();
     const region = els.filterRegion.value;
@@ -325,7 +327,7 @@
       projects = await apiFetch('/viable/v1/projects-dashboard?' + params.toString());
       renderTable();
     } catch (e) {
-      els.tbody.innerHTML = '<tr><td colspan="10" class="form-msg error">' + escapeHtml(e.message) + '</td></tr>';
+      els.tbody.innerHTML = '<tr><td colspan="11" class="form-msg error">' + escapeHtml(e.message) + '</td></tr>';
     }
   }
 
@@ -350,7 +352,7 @@
     updateBulkBar();
 
     if (!projects.length) {
-      els.tbody.innerHTML = '<tr><td colspan="10" class="hint">No hay proyectos con estos filtros.</td></tr>';
+      els.tbody.innerHTML = '<tr><td colspan="11" class="hint">No hay proyectos con estos filtros.</td></tr>';
       return;
     }
 
@@ -364,11 +366,16 @@
 
       const regionsText = p.regions && p.regions.length ? escapeHtml(p.regions.join(', ')) : '<span class="hint">—</span>';
       const roadsText = p.roads && p.roads.length ? escapeHtml(p.roads.join(', ')) : '<span class="hint">—</span>';
+      const titleTooltip = p.short_description ? ` title="${escapeHtml(p.short_description)}"` : '';
+      const titleText = p.has_content && p.url
+        ? `<a href="${escapeHtml(p.url)}" target="_blank" rel="noopener"${titleTooltip}>${escapeHtml(p.title)}</a>`
+        : `<span${titleTooltip}>${escapeHtml(p.title)}</span>`;
 
       tr.innerHTML = `
         <td><input type="checkbox" class="row-check" data-id="${p.id}"></td>
         <td>${p.code ? escapeHtml(p.code) : '<span class="hint">—</span>'}</td>
-        <td>${escapeHtml(p.title)}</td>
+        <td>${p.type ? escapeHtml(p.type) : '<span class="hint">—</span>'}</td>
+        <td>${titleText}</td>
         <td>${regionsText}</td>
         <td>${roadsText}</td>
         <td><span class="state-tag state-${escapeHtml((p.state || '').toLowerCase())}">${escapeHtml(p.state || '—')}</span></td>
@@ -379,7 +386,7 @@
           <button class="btn-icon btn-toggle-events" title="Ver eventos">${expandedProjectIds.has(p.id) ? '▾' : '▸'}</button>
           <button class="btn-icon btn-edit-project" title="Editar proyecto">✏️</button>
           <a class="btn-icon btn-wp-edit" title="Editar en WordPress" href="${wpAdminEditUrl(p.id)}" target="_blank" rel="noopener">📝</a>
-          <button class="btn-icon btn-add-event" title="Agregar evento">+ Evento</button>
+          <button class="btn-icon btn-add-event" title="Agregar evento">🕒+</button>
           <a class="btn-icon btn-google" title="Buscar en Google" href="${googleSearchUrl(p)}" target="_blank" rel="noopener">🔎</a>
         </td>
       `;
@@ -428,7 +435,7 @@
     tr.className = 'events-row';
     tr.dataset.projectId = project.id;
     const td = document.createElement('td');
-    td.colSpan = 10;
+    td.colSpan = 11;
     td.innerHTML = '<div class="events-panel hint">Cargando eventos...</div>';
     tr.appendChild(td);
     rowEl.after(tr);
@@ -473,13 +480,25 @@
           <span class="event-item-date">${escapeHtml(dateDisplay)}</span>
           ${extras.length ? '<span class="event-item-extra">' + extras.join(' · ') + '</span>' : ''}
           <button type="button" class="btn-link btn-edit-event">Editar</button>
+          <button type="button" class="btn-link btn-delete-event">Eliminar</button>
         </div>
         <div class="event-item-text">${text}</div>
         ${acf.summary ? '<div class="event-item-summary">' + escapeHtml(acf.summary) + '</div>' : ''}
       `;
       item.querySelector('.btn-edit-event').addEventListener('click', () => openEventDialog(project, ev));
+      item.querySelector('.btn-delete-event').addEventListener('click', () => deleteEvent(project, ev));
       panel.appendChild(item);
     });
+  }
+
+  async function deleteEvent(project, event) {
+    if (!confirm('¿Eliminar este evento? Esta acción no se puede deshacer.')) return;
+    try {
+      await apiFetch('/wp/v2/project-events/' + event.id + '?force=true', { method: 'DELETE' });
+      await loadProjects();
+    } catch (e) {
+      alert('No se pudo eliminar el evento: ' + e.message);
+    }
   }
 
   els.selectAll.addEventListener('change', () => {
@@ -536,13 +555,27 @@
     els.evProgress.value = (acf.progress || acf.progress === 0) ? acf.progress : '';
     els.evState.value = acf.state || '';
     els.evSummary.value = acf.summary || '';
+    els.evEndDate.value = normalizeDateForInput(project.end_date);
     els.eventFormMsg.textContent = '';
     els.eventFormMsg.className = 'form-msg';
+    els.btnDeleteEvent.hidden = !editEvent;
     els.eventDialog.showModal();
   }
 
   els.btnCancelEvent.addEventListener('click', () => {
     els.eventDialog.close();
+  });
+
+  els.btnDeleteEvent.addEventListener('click', async () => {
+    if (!editingEventId || !eventDialogProject) return;
+    if (!confirm('¿Eliminar este evento? Esta acción no se puede deshacer.')) return;
+    try {
+      await apiFetch('/wp/v2/project-events/' + editingEventId + '?force=true', { method: 'DELETE' });
+      els.eventDialog.close();
+      await loadProjects();
+    } catch (e) {
+      showEventFormMessage('No se pudo eliminar: ' + e.message, true);
+    }
   });
 
   els.eventForm.addEventListener('submit', async (evt) => {
@@ -581,6 +614,14 @@
         method: editingEventId ? 'PUT' : 'POST',
         body: JSON.stringify(payload),
       });
+
+      if (els.evEndDate.value) {
+        await apiFetch('/wp/v2/project/' + eventDialogProject.id, {
+          method: 'PUT',
+          body: JSON.stringify({ acf: { end_date: els.evEndDate.value } }),
+        });
+      }
+
       els.eventDialog.close();
       await loadProjects();
     } catch (e) {

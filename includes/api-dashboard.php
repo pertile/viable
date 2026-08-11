@@ -173,16 +173,27 @@ function viable_get_projects_dashboard($request) {
 
         $latest_event = viable_get_latest_project_event($id);
 
+        $article_text = trim(wp_strip_all_tags(str_replace('&nbsp;', ' ', get_post_field('post_content', $id))));
+
+        $proj_type = get_field('type', $id);
+        $proj_dup_type = get_field('duplication_type', $id);
+        $proj_type_disp = (strtolower((string) $proj_type) === 'duplicación' && $proj_dup_type) ? $proj_dup_type : $proj_type;
+
         $results[] = [
             'id' => $id,
             'code' => get_field('code', $id),
             'title' => get_the_title($id),
+            'short_description' => get_field('short_description', $id),
+            'url' => get_permalink($id),
+            'has_content' => $article_text !== '',
             'state' => get_field('state', $id),
+            'type' => $proj_type_disp,
             'progress' => get_field('progress', $id),
             'regions' => $region_names,
             'roads' => $road_names,
             'google_search' => get_field('google_search', $id) ?: null,
             'last_verified_on' => get_field('last_verified_on', $id) ?: null,
+            'end_date' => get_field('end_date', $id) ?: null,
             'last_event' => $latest_event ? [
                 'date' => $latest_event['date']->format('d/m/Y'),
                 'description' => $latest_event['description'],

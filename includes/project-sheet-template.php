@@ -72,7 +72,7 @@ $state_window = array_values(array_filter([
                                 <span class="child-meta">Estado: <?= esc_html($child['state']) ?></span>
                             <?php endif; ?>
                             <?php if ($child['progress'] !== null && $child['progress'] !== ''): ?>
-                                <span class="child-meta">Avance: <?= esc_html((string) intval($child['progress'])) ?>%</span>
+                                <span class="child-meta">Avance: <?= esc_html(viable_format_percent($child['progress'])) ?>%</span>
                             <?php endif; ?>
                         </li>
                     <?php endforeach; ?>
@@ -120,7 +120,7 @@ $state_window = array_values(array_filter([
                 <div class="viable-timeline-rail timeline-bar<?= !empty($timeline['has_full_dates']) ? ' timeline-bar-with-dates' : ' timeline-bar-simple' ?>">
                     <?php if ($timeline['bar_end_pct'] !== null): ?>
                         <div class="viable-timeline-fill" style="width:<?= esc_attr(number_format((float) $timeline['bar_end_pct'], 3, '.', '')) ?>%;">
-                            <span class="progress-value-inside"><?= esc_html((string) intval($timeline['progress'])) ?>%</span>
+                            <span class="progress-value-inside"><?= esc_html(viable_format_percent($timeline['progress'])) ?>%</span>
                         </div>
                     <?php endif; ?>
 

@@ -30,12 +30,13 @@ body {
 .topbar h1 { font-size: 1.1rem; margin: 0; }
 
 main {
-  max-width: 1100px;
-  margin: 1.5rem auto;
-  padding: 0 1rem;
+  width: 100%;
+  margin: 1.5rem 0;
+  padding: 0 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  box-sizing: border-box;
 }
 
 .panel {
@@ -97,6 +98,10 @@ fieldset legend { font-size: 0.8rem; color: var(--muted); padding: 0 0.25rem; }
   cursor: pointer;
   font-size: 0.9rem;
 }
+
+.btn-link.btn-danger { color: var(--danger); }
+
+.actions-spacer { flex: 1; }
 
 .hint { font-size: 0.8rem; color: var(--muted); }
 
@@ -220,6 +225,7 @@ tbody tr:hover { background: #f7f9fb; }
 .event-item-date { font-weight: 600; }
 .event-item-extra { color: var(--muted); }
 .event-item-main .btn-edit-event { margin-left: auto; }
+.event-item-main .btn-delete-event { color: var(--danger); }
 
 .event-item-text { font-size: 0.85rem; margin-top: 0.3rem; word-break: break-word; }
 .event-item-summary { font-size: 0.8rem; color: var(--muted); margin-top: 0.2rem; }

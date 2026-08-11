@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Proyectos — viable</title>
-<link rel="stylesheet" href="style.css?v=6">
+<link rel="stylesheet" href="style.css?v=9">
 </head>
 <body>
 
@@ -68,6 +68,7 @@
         <tr>
           <th><input type="checkbox" id="select-all"></th>
           <th>Código</th>
+          <th>Tipo</th>
           <th>Nombre</th>
           <th>Región</th>
           <th>Rutas</th>
@@ -79,7 +80,7 @@
         </tr>
       </thead>
       <tbody id="projects-tbody">
-        <tr><td colspan="10" class="hint">Cargando...</td></tr>
+        <tr><td colspan="11" class="hint">Cargando...</td></tr>
       </tbody>
     </table>
   </section>
@@ -104,7 +105,7 @@
     </fieldset>
 
     <label>Avance (%) — opcional
-      <input type="number" id="ev-progress" min="0" max="100" step="1">
+      <input type="number" id="ev-progress" min="0" max="100" step="any">
     </label>
 
     <label>Estado — opcional
@@ -124,7 +125,13 @@
       <textarea id="ev-summary" rows="2"></textarea>
     </label>
 
+    <label>Fecha de finalización del proyecto — opcional
+      <input type="date" id="ev-end-date">
+    </label>
+
     <div class="actions">
+      <button type="button" id="btn-delete-event" class="btn-link btn-danger" hidden>Eliminar evento</button>
+      <span class="actions-spacer"></span>
       <button type="button" id="btn-cancel-event" class="btn-link">Cancelar</button>
       <button type="submit" id="btn-save-event" class="btn-primary">Guardar evento</button>
     </div>
@@ -156,6 +163,7 @@
           <option>Duplicación</option>
           <option>Colectoras</option>
           <option>Ampliación carriles</option>
+          <option>Ensanche</option>
           <option>Puente</option>
           <option>Rotonda</option>
           <option>Túnel</option>
@@ -191,7 +199,7 @@
         </select>
       </label>
       <label>Avance (%)
-        <input type="number" id="pr-progress" min="0" max="100" step="1">
+        <input type="number" id="pr-progress" min="0" max="100" step="any">
       </label>
       <label>Última actualización de avance
         <input type="date" id="pr-progress-updated-on">
@@ -241,6 +249,6 @@
   </form>
 </dialog>
 
-<script src="app.js?v=6"></script>
+<script src="app.js?v=10"></script>
 </body>
 </html>

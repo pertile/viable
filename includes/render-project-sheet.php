@@ -52,6 +52,14 @@ function viable_format_date_es($date_str) {
     return $date_str;
 }
 
+function viable_format_percent($value) {
+    if ($value === null || $value === '') {
+        return '';
+    }
+    $formatted = rtrim(rtrim(number_format((float) $value, 2, '.', ''), '0'), '.');
+    return $formatted === '' ? '0' : $formatted;
+}
+
 function viable_parse_date_dmy($date_str) {
     if (!$date_str) {
         return null;
