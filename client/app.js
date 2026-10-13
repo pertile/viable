@@ -3,6 +3,7 @@
 
   const STORAGE_KEY = 'viable_events_client_config';
   const STATE_CHOICES = ['Proyecto', 'En licitación', 'Adjudicado', 'En obras', 'Paralizado', 'Finalizado', 'Cancelado'];
+  const STATE_NUMBERS = { 'Proyecto': 0, 'En licitación': 10, 'Adjudicado': 20, 'En obras': 30, 'Paralizado': 40, 'Finalizado': 50, 'Cancelado': 60 };
   const DEFAULT_EXCLUDED_STATES = ['Finalizado', 'Cancelado'];
 
   const els = {
@@ -54,6 +55,7 @@
     prDuplicationType: document.getElementById('pr-duplication-type'),
     prLength: document.getElementById('pr-length'),
     prGoogleSearch: document.getElementById('pr-google-search'),
+    prArticleCompletionPending: document.getElementById('pr-article-completion-pending'),
     prState: document.getElementById('pr-state'),
     prProgress: document.getElementById('pr-progress'),
     prProgressUpdatedOn: document.getElementById('pr-progress-updated-on'),
@@ -75,6 +77,7 @@
   let allRoadsCache = [];
   let selectedRoads = [];
   let eventDialogProject = null;
+  let eventDialogInitialEndDate = '';
   let editingProjectId = null;
   let editingEventId = null;
   const expandedProjectIds = new Set();
@@ -175,13 +178,20 @@
     try {
       regionsCache = await apiFetch('/viable/v1/regions');
       regionsCache.forEach((r) => {
+        const label = '—'.repeat(r.depth) + ' ' + r.name;
+
         const opt = document.createElement('option');
         opt.value = r.id;
-        opt.textContent = '—'.repeat(r.depth) + ' ' + r.name;
+        opt.textContent = label;
         els.filterRegion.appendChild(opt);
 
-        const opt2 = opt.cloneNode(true);
-        els.prRegions.appendChild(opt2);
+        // En el formulario de proyecto van como checkboxes: un proyecto puede
+        // tener varias regiones y con un <select multiple> hay que saberlo
+        // (ctrl+clic) para no pisar la selección anterior.
+        const check = document.createElement('label');
+        check.className = 'inline-check';
+        check.innerHTML = `<input type="checkbox" value="${r.id}"> ${escapeHtml(label)}`;
+        els.prRegions.appendChild(check);
       });
     } catch (e) {
       // Silencioso: si falla, el filtro de región simplemente queda en "Todas".
@@ -309,11 +319,11 @@
 
   async function loadProjects() {
     if (!isConfigured()) {
-      els.tbody.innerHTML = '<tr><td colspan="11" class="hint">Configurá la conexión primero.</td></tr>';
+      els.tbody.innerHTML = '<tr><td colspan="12" class="hint">Configurá la conexión primero.</td></tr>';
       return;
     }
 
-    els.tbody.innerHTML = '<tr><td colspan="11" class="hint">Cargando...</td></tr>';
+    els.tbody.innerHTML = '<tr><td colspan="12" class="hint">Cargando...</td></tr>';
 
     const states = getSelectedStates();
     const region = els.filterRegion.value;
@@ -327,7 +337,7 @@
       projects = await apiFetch('/viable/v1/projects-dashboard?' + params.toString());
       renderTable();
     } catch (e) {
-      els.tbody.innerHTML = '<tr><td colspan="11" class="form-msg error">' + escapeHtml(e.message) + '</td></tr>';
+      els.tbody.innerHTML = '<tr><td colspan="12" class="form-msg error">' + escapeHtml(e.message) + '</td></tr>';
     }
   }
 
@@ -352,7 +362,7 @@
     updateBulkBar();
 
     if (!projects.length) {
-      els.tbody.innerHTML = '<tr><td colspan="11" class="hint">No hay proyectos con estos filtros.</td></tr>';
+      els.tbody.innerHTML = '<tr><td colspan="12" class="hint">No hay proyectos con estos filtros.</td></tr>';
       return;
     }
 
@@ -379,6 +389,7 @@
         <td>${regionsText}</td>
         <td>${roadsText}</td>
         <td><span class="state-tag state-${escapeHtml((p.state || '').toLowerCase())}">${escapeHtml(p.state || '—')}</span></td>
+        <td>${p.article_completion_pending ? '<span class="article-pending-tag">Pendiente</span>' : '<span class="hint">—</span>'}</td>
         <td>${p.progress !== null && p.progress !== '' ? escapeHtml(String(p.progress)) + '%' : '—'}</td>
         <td>${lastEvent}</td>
         <td>${p.last_verified_on ? escapeHtml(p.last_verified_on) : '<span class="hint">—</span>'}</td>
@@ -555,7 +566,8 @@
     els.evProgress.value = (acf.progress || acf.progress === 0) ? acf.progress : '';
     els.evState.value = acf.state || '';
     els.evSummary.value = acf.summary || '';
-    els.evEndDate.value = normalizeDateForInput(project.end_date);
+    eventDialogInitialEndDate = normalizeDateForInput(project.end_date);
+    els.evEndDate.value = eventDialogInitialEndDate;
     els.eventFormMsg.textContent = '';
     els.eventFormMsg.className = 'form-msg';
     els.btnDeleteEvent.hidden = !editEvent;
@@ -584,6 +596,13 @@
     els.eventFormMsg.className = 'form-msg';
 
     if (!eventDialogProject) return;
+
+    const eventProgress = els.evProgress.value !== '' ? Number(els.evProgress.value) : Number(eventDialogProject.progress || 0);
+    const eventState = els.evState.value || eventDialogProject.state;
+    if (eventProgress > 0 && (STATE_NUMBERS[eventState] || 0) < 30) {
+      showEventFormMessage('Con avance mayor a 0, el estado debe ser En obras, Paralizado, Finalizado o Cancelado.', true);
+      return;
+    }
 
     const url = els.evUrl.value.trim();
     const description = els.evDescription.value.trim();
@@ -615,10 +634,17 @@
         body: JSON.stringify(payload),
       });
 
-      if (els.evEndDate.value) {
-        await apiFetch('/wp/v2/project/' + eventDialogProject.id, {
-          method: 'PUT',
-          body: JSON.stringify({ acf: { end_date: els.evEndDate.value } }),
+      // Endpoint propio en vez de PUT /wp/v2/project/{id}: ACF marca como
+      // obligatorios en el schema REST a code/short_description/state/roads,
+      // así que un acf parcial con sólo end_date lo rechaza WordPress con
+      // "code es una propiedad necesaria de acf".
+      if (els.evEndDate.value !== eventDialogInitialEndDate) {
+        await apiFetch('/viable/v1/project-end-date', {
+          method: 'POST',
+          body: JSON.stringify({
+            project_id: eventDialogProject.id,
+            end_date: els.evEndDate.value,
+          }),
         });
       }
 
@@ -654,7 +680,7 @@
 
   function resetProjectForm() {
     els.projectForm.reset();
-    Array.from(els.prRegions.options).forEach((o) => { o.selected = false; });
+    setCheckedRegions([]);
     selectedRoads = [];
     els.prRoadsSearch.value = '';
     els.prRoadsResults.innerHTML = '';
@@ -664,9 +690,17 @@
     els.projectFormMsg.className = 'form-msg';
   }
 
-  function selectOptionsByIds(select, ids) {
+  function regionCheckboxes() {
+    return Array.from(els.prRegions.querySelectorAll('input[type="checkbox"]'));
+  }
+
+  function setCheckedRegions(ids) {
     const idSet = new Set((ids || []).map(String));
-    Array.from(select.options).forEach((o) => { o.selected = idSet.has(o.value); });
+    regionCheckboxes().forEach((cb) => { cb.checked = idSet.has(cb.value); });
+  }
+
+  function getCheckedRegions() {
+    return regionCheckboxes().filter((cb) => cb.checked).map((cb) => Number(cb.value));
   }
 
   function populateProjectForm(full) {
@@ -679,6 +713,7 @@
     els.prDuplicationType.value = acf.duplication_type || '';
     els.prLength.value = acf.length || acf.length === 0 ? acf.length : '';
     els.prGoogleSearch.value = acf.google_search || '';
+    els.prArticleCompletionPending.checked = Boolean(acf.article_completion_pending);
     els.prState.value = acf.state || 'Proyecto';
     els.prProgress.value = (acf.progress || acf.progress === 0) ? acf.progress : '';
     els.prProgressUpdatedOn.value = normalizeDateForInput(acf.progress_updated_on);
@@ -688,7 +723,7 @@
     els.prAwardDate.value = normalizeDateForInput(acf.award_date);
     els.prStartDate.value = normalizeDateForInput(acf.start_date);
     els.prEndDate.value = normalizeDateForInput(acf.end_date);
-    selectOptionsByIds(els.prRegions, acf.regions);
+    setCheckedRegions(acf.regions);
 
     selectedRoads = (acf.roads || []).map((id) => {
       const found = allRoadsCache.find((r) => r.id === id);
@@ -708,6 +743,7 @@
     if (!projectId) {
       els.projectDialogTitle.textContent = 'Nuevo proyecto';
       els.prState.value = 'Proyecto';
+      els.prArticleCompletionPending.checked = false;
       els.projectDialog.showModal();
       return;
     }
@@ -726,10 +762,6 @@
   els.btnNewProject.addEventListener('click', () => openProjectDialog(null));
   els.btnCancelProject.addEventListener('click', () => els.projectDialog.close());
 
-  function selectedOptionValues(select) {
-    return Array.from(select.selectedOptions).map((o) => Number(o.value));
-  }
-
   els.projectForm.addEventListener('submit', async (evt) => {
     evt.preventDefault();
     showProjectFormMessage('', false);
@@ -739,17 +771,23 @@
       return;
     }
 
+    if (Number(els.prProgress.value) > 0 && STATE_NUMBERS[els.prState.value] < 30) {
+      showProjectFormMessage('Con avance mayor a 0, el estado debe ser En obras, Paralizado, Finalizado o Cancelado.', true);
+      return;
+    }
+
     const acf = {
       code: els.prCode.value.trim(),
       short_description: els.prShortDescription.value.trim(),
       state: els.prState.value,
       roads: selectedRoads.map((r) => r.id),
+      article_completion_pending: els.prArticleCompletionPending.checked ? 1 : 0,
     };
     // Select con opción vacía ("— sin especificar —") o listas de taxonomía
     // vacías: si no hay valor, omitir la clave en vez de mandar "" o [] —
     // ACF exige al menos 1 item / una de las choices definidas, así que
     // mandar el "vacío" explícito rompe la request.
-    const regions = selectedOptionValues(els.prRegions);
+    const regions = getCheckedRegions();
     if (regions.length) acf.regions = regions;
     if (els.prType.value) acf.type = els.prType.value;
     if (!els.prDuplicationTypeWrap.hidden && els.prDuplicationType.value) {

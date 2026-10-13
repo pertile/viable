@@ -16,6 +16,12 @@ $state_window = array_values(array_filter([
     $states[$current_index] ?? null,
     $states[$current_index + 1] ?? null,
 ]));
+$state_dates = [
+    'en licitación' => $bid_date_formatted ?? null,
+    'adjudicado' => $award_date_formatted ?? null,
+    'en obras' => $start_date_formatted ?? null,
+    'finalizado' => viable_format_date_dmy($end_date),
+];
 ?>
 
 <section class="viable-project-sheet state-<?= esc_attr($state) ?>">
@@ -93,8 +99,13 @@ $state_window = array_values(array_filter([
             <div class="state-current-view">
                 <span class="state-arrow-left" onclick="this.closest('.state-sequence').dataset.expanded = 'true'; this.parentElement.style.display = 'none'; this.parentElement.nextElementSibling.style.display = 'flex';">&larr;</span>
                 <?php foreach ($state_window as $state_item): ?>
-                    <span class="state-step<?= $state_item === $normalized_state ? ' current' : (array_search($state_item, $states, true) < $current_index ? ' active' : '') ?>">
-                        <?= esc_html(ucfirst($state_item)) ?>
+                    <span class="state-step-group">
+                        <span class="state-step<?= $state_item === $normalized_state ? ' current' : (array_search($state_item, $states, true) < $current_index ? ' active' : '') ?>">
+                            <?= esc_html($state_item === 'adjudicado' ? 'Adjudicación' : ucfirst($state_item)) ?>
+                        </span>
+                        <?php if (!empty($state_dates[$state_item])): ?>
+                            <span class="state-step-date"><?= esc_html($state_dates[$state_item]) ?></span>
+                        <?php endif; ?>
                     </span>
                     <?php if ($state_item !== end($state_window)): ?>
                         <span class="state-arrow">&rarr;</span>
@@ -104,8 +115,13 @@ $state_window = array_values(array_filter([
             </div>
             <div class="state-full-view" style="display: none;">
                 <?php foreach ($states as $index => $state_item): ?>
-                    <span class="state-step<?= $index === $current_index ? ' current' : ($index < $current_index ? ' active' : '') ?>">
-                        <?= esc_html(ucfirst($state_item)) ?>
+                    <span class="state-step-group">
+                        <span class="state-step<?= $index === $current_index ? ' current' : ($index < $current_index ? ' active' : '') ?>">
+                            <?= esc_html($state_item === 'adjudicado' ? 'Adjudicación' : ucfirst($state_item)) ?>
+                        </span>
+                        <?php if (!empty($state_dates[$state_item])): ?>
+                            <span class="state-step-date"><?= esc_html($state_dates[$state_item]) ?></span>
+                        <?php endif; ?>
                     </span>
                     <?php if ($index < count($states) - 1): ?>
                         <span class="state-arrow">&rarr;</span>

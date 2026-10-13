@@ -83,6 +83,26 @@ add_action( 'acf/include_fields', function() {
 				'append' => '',
 			),
 			array(
+				'key' => 'field_viable_article_completion_pending',
+				'label' => 'Pendiente de completar artículo',
+				'name' => 'article_completion_pending',
+				'aria-label' => '',
+				'type' => 'true_false',
+				'instructions' => 'Indicador interno. El proyecto continúa publicado.',
+				'required' => 0,
+				'conditional_logic' => 0,
+				'wrapper' => array(
+					'width' => '',
+					'class' => '',
+					'id' => '',
+				),
+				'default_value' => 0,
+				'allow_in_bindings' => 0,
+				'ui' => 1,
+				'ui_on_text' => 'Pendiente',
+				'ui_off_text' => 'Completo',
+			),
+			array(
 				'key' => 'field_68094b5a_project_parent',
 				'label' => 'Proyecto padre',
 				'name' => 'project_parent',
@@ -491,8 +511,9 @@ add_action( 'acf/include_fields', function() {
 				'field_type' => 'checkbox',
 				'allow_in_bindings' => 0,
 				'bidirectional' => 0,
-				'multiple' => 0,
-				'allow_null' => 0,
+				// Un proyecto puede pertenecer a más de una región/categoría.
+				'multiple' => 1,
+				'allow_null' => 1,
 				'bidirectional_target' => array(),
 			),
 			array(

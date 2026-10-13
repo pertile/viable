@@ -12,7 +12,9 @@ function viable_register_dashboard_endpoints() {
     register_rest_route('viable/v1', '/projects-dashboard', [
         'methods' => 'GET',
         'callback' => 'viable_get_projects_dashboard',
-        'permission_callback' => '__return_true',
+        'permission_callback' => function () {
+            return current_user_can('edit_posts');
+        },
         'args' => [
             'states' => ['required' => false, 'type' => 'string'],
             'region' => ['required' => false, 'type' => 'string'],
@@ -23,6 +25,14 @@ function viable_register_dashboard_endpoints() {
     register_rest_route('viable/v1', '/projects-bulk-verify', [
         'methods' => 'POST',
         'callback' => 'viable_bulk_verify_projects',
+        'permission_callback' => function () {
+            return current_user_can('edit_posts');
+        },
+    ]);
+
+    register_rest_route('viable/v1', '/project-end-date', [
+        'methods' => 'POST',
+        'callback' => 'viable_update_project_end_date',
         'permission_callback' => function () {
             return current_user_can('edit_posts');
         },
@@ -186,6 +196,7 @@ function viable_get_projects_dashboard($request) {
             'short_description' => get_field('short_description', $id),
             'url' => get_permalink($id),
             'has_content' => $article_text !== '',
+            'article_completion_pending' => (bool) get_field('article_completion_pending', $id),
             'state' => get_field('state', $id),
             'type' => $proj_type_disp,
             'progress' => get_field('progress', $id),
@@ -237,4 +248,48 @@ function viable_bulk_verify_projects($request) {
     }
 
     return rest_ensure_response(['updated' => $updated, 'date' => $iso_date]);
+}
+
+/**
+ * Actualiza sólo la fecha de finalización de un proyecto.
+ * Body: { "project_id": 123, "end_date": "2027-03-15" }  ("" borra la fecha)
+ *
+ * OJO: no se puede usar PUT /wp/v2/project/{id} con un acf parcial. La
+ * integración REST de ACF expone el grupo entero como un objeto de schema y
+ * marca como "required" a los campos obligatorios del grupo (code,
+ * short_description, state, roads), así que WordPress rechaza cualquier
+ * request que no los mande TODOS, aunque sólo se quiera tocar un campo:
+ * "code es una propiedad necesaria de acf". Por eso este endpoint propio, que
+ * escribe con update_field() y no pasa por esa validación.
+ */
+function viable_update_project_end_date($request) {
+    $body = $request->get_json_params();
+    $project_id = !empty($body['project_id']) ? (int) $body['project_id'] : 0;
+
+    if (!$project_id || get_post_type($project_id) !== 'project') {
+        return new WP_Error('viable_invalid_project', 'Proyecto inexistente.', ['status' => 400]);
+    }
+
+    if (!current_user_can('edit_post', $project_id)) {
+        return new WP_Error('viable_forbidden', 'Sin permisos para editar este proyecto.', ['status' => 403]);
+    }
+
+    $raw = isset($body['end_date']) ? trim((string) $body['end_date']) : '';
+
+    if ($raw === '') {
+        update_field('end_date', '', $project_id);
+        return rest_ensure_response(['project_id' => $project_id, 'end_date' => null]);
+    }
+
+    $ts = strtotime($raw);
+    if ($ts === false) {
+        return new WP_Error('viable_invalid_date', 'Fecha inválida.', ['status' => 400]);
+    }
+
+    // ISO igual que en viable_recompute_project_from_events(): ACF guarda el
+    // date_picker tal cual se lo pasemos y sólo el ISO es inequívoco al releer.
+    $iso_date = gmdate('Y-m-d', $ts);
+    update_field('end_date', $iso_date, $project_id);
+
+    return rest_ensure_response(['project_id' => $project_id, 'end_date' => $iso_date]);
 }

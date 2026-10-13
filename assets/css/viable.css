@@ -231,6 +231,22 @@
   transition: all 0.2s;
 }
 
+.state-step-group {
+  display: inline-flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.state-step-date {
+  color: #5b5d5a;
+  font-size: 0.72rem;
+  line-height: 1.2;
+  text-align: center;
+  white-space: normal;
+}
+
 .state-step.active {
   background: #d1e7dd;
   color: #0f5132;
@@ -480,6 +496,14 @@
 
 .timeline-point-bottom.timeline-tier-1 .timeline-label-bottom-text {
   top: 3.8rem;
+}
+
+.timeline-point-bottom.timeline-tier-2 .timeline-label-bottom-date {
+  top: 4.4rem;
+}
+
+.timeline-point-bottom.timeline-tier-2 .timeline-label-bottom-text {
+  top: 5.6rem;
 }
 
 .timeline-label-bottom-date {

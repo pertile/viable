@@ -262,6 +262,16 @@ tbody tr:hover { background: #f7f9fb; }
 .state-tag.state-cancelado { background: #f6d3d3; color: #7a1414; }
 .state-tag.state-adjudicado { background: #e7dcf6; color: #4a1d7a; }
 
+.article-pending-tag {
+  display: inline-block;
+  border-radius: 4px;
+  padding: 0.15rem 0.45rem;
+  background: #fff1c2;
+  color: #684b00;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
 /* ---- Dialog (popup de evento) ---- */
 
 dialog#event-dialog {
@@ -314,6 +324,19 @@ dialog#project-dialog h2 {
 }
 
 select[multiple] { height: auto; }
+
+/* ---- Lista de checkboxes (Regiones) ---- */
+
+.check-list {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem 0.6rem 0.1rem;
+  max-height: 160px;
+  overflow-y: auto;
+  margin-bottom: 0.75rem;
+}
+
+.check-list .inline-check { display: flex; margin: 0 0 0.35rem; }
 
 /* ---- Tag picker (Rutas) ---- */
 

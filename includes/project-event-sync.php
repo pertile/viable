@@ -53,17 +53,78 @@ function viable_recompute_project_from_events($project_id, $exclude_event_id = 0
     // (ej. "20/07/2026") se toma como mes inválido y termina devolviendo la
     // fecha de hoy. El ISO es el único formato que strtotime() interpreta
     // siempre sin ambigüedad, sea cual sea el día/mes.
-    if ($latest_progress) {
-        update_field('progress', $latest_progress['value'], $project_id);
-        update_field('progress_updated_on', $latest_progress['date']->format('Y-m-d'), $project_id);
+    if ($latest_state) {
+        $state_to_save = $latest_state['value'];
+    } else {
+        $state_to_save = get_field('state', $project_id);
     }
 
-    if ($latest_state) {
-        update_field('state', $latest_state['value'], $project_id);
-        if ($latest_state['value'] === 'Finalizado') {
-            update_field('end_date', $latest_state['date']->format('Y-m-d'), $project_id);
+    if ($latest_progress) {
+        $progress_to_save = $latest_progress['value'];
+    } else {
+        $progress_to_save = get_field('progress', $project_id);
+    }
+
+    if (!viable_project_state_progress_error($state_to_save, $progress_to_save)) {
+        if ($latest_progress) {
+            update_field('progress', $latest_progress['value'], $project_id);
+            update_field('progress_updated_on', $latest_progress['date']->format('Y-m-d'), $project_id);
+        }
+
+        if ($latest_state) {
+            update_field('state', $latest_state['value'], $project_id);
+            if ($latest_state['value'] === 'Finalizado') {
+                update_field('end_date', $latest_state['date']->format('Y-m-d'), $project_id);
+            }
         }
     }
+}
+
+function viable_project_event_state_progress_error($acf) {
+    $acf = is_array($acf) ? $acf : [];
+    $project = $acf['project'] ?? 0;
+    $project_id = is_object($project) && isset($project->ID)
+        ? (int) $project->ID
+        : (is_numeric($project) ? (int) $project : 0);
+
+    if (!$project_id || get_post_type($project_id) !== 'project') {
+        return false;
+    }
+
+    $state = array_key_exists('state', $acf) && $acf['state'] !== ''
+        ? $acf['state']
+        : get_field('state', $project_id);
+    $progress = array_key_exists('progress', $acf) && $acf['progress'] !== ''
+        ? $acf['progress']
+        : get_field('progress', $project_id);
+
+    return viable_project_state_progress_error($state, $progress);
+}
+
+add_action('acf/validate_save_post', 'viable_validate_project_event_state_progress_admin_save');
+
+function viable_validate_project_event_state_progress_admin_save() {
+    if (!isset($_POST['post_type']) || $_POST['post_type'] !== 'project_event') {
+        return;
+    }
+
+    $acf_data = isset($_POST['acf']) ? $_POST['acf'] : [];
+    $acf = [
+        'project' => $acf_data['field_project_event_project'] ?? 0,
+        'state' => $acf_data['field_project_event_state'] ?? '',
+        'progress' => $acf_data['field_project_event_progress'] ?? '',
+    ];
+    $error = viable_project_event_state_progress_error($acf);
+    if ($error) {
+        acf_add_validation_error('acf[field_project_event_state]', $error->get_error_message());
+    }
+}
+
+add_filter('rest_pre_insert_project_event', 'viable_validate_project_event_state_progress_rest_save', 10, 2);
+
+function viable_validate_project_event_state_progress_rest_save($prepared_post, $request) {
+    $error = viable_project_event_state_progress_error($request->get_param('acf'));
+    return $error ?: $prepared_post;
 }
 
 function viable_get_project_event_project_id($event_id) {

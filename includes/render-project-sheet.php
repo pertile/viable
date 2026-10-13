@@ -82,6 +82,11 @@ function viable_parse_date_dmy($date_str) {
     return $date;
 }
 
+function viable_format_date_dmy($date_str) {
+    $date = viable_parse_date_dmy($date_str);
+    return $date ? $date->format('d/m/Y') : null;
+}
+
 function viable_format_date_short($date) {
     if (!$date instanceof DateTime) {
         return null;
@@ -176,7 +181,7 @@ function viable_build_progress_timeline($start_date_raw, $duration_months, $end_
         $markers[] = ['key' => 'start', 'label' => 'Inicio', 'date' => viable_format_date_short($start), 'pct' => 0, 'placement' => 'bottom'];
 
         if ($planned_end && $planned_pct !== null) {
-            $markers[] = ['key' => 'planned', 'label' => 'Finalización según pliego', 'date' => viable_format_date_short($planned_end), 'pct' => $planned_pct, 'placement' => 'top', 'tier' => 1];
+            $markers[] = ['key' => 'planned', 'label' => 'Finalización según pliego', 'date' => viable_format_date_short($planned_end), 'pct' => $planned_pct, 'placement' => 'bottom', 'tier' => 2];
         }
 
         if ($end_date && $completion_pct !== null) {
@@ -370,9 +375,9 @@ function viable_get_project_data($pid) {
         'end_date'            => $end_date,
         'end_date_raw'        => $end_date_raw,
         'duration'            => $duration,
-        'bid_date_formatted'  => $bid_date ? viable_format_date_es($bid_date) : null,
-        'award_date_formatted'=> $award_date ? viable_format_date_es($award_date) : null,
-        'start_date_formatted'=> $start_date ? viable_format_date_es($start_date) : null,
+        'bid_date_formatted'  => viable_format_date_dmy($bid_date),
+        'award_date_formatted'=> viable_format_date_dmy($award_date),
+        'start_date_formatted'=> viable_format_date_dmy($start_date),
         'start_date_raw'      => $start_date,
         'tender_documents'    => get_field('tender_documents', $pid),
         'code'                => get_field('code', $pid),

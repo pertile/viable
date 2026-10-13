@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Proyectos — viable</title>
-<link rel="stylesheet" href="style.css?v=9">
+<link rel="stylesheet" href="style.css?v=10">
 </head>
 <body>
 
@@ -73,6 +73,7 @@
           <th>Región</th>
           <th>Rutas</th>
           <th>Estado</th>
+          <th>Artículo</th>
           <th>Avance</th>
           <th>Último evento</th>
           <th>Última constatación</th>
@@ -80,7 +81,7 @@
         </tr>
       </thead>
       <tbody id="projects-tbody">
-        <tr><td colspan="11" class="hint">Cargando...</td></tr>
+        <tr><td colspan="12" class="hint">Cargando...</td></tr>
       </tbody>
     </table>
   </section>
@@ -183,6 +184,10 @@
       <label>Búsqueda en Google
         <input type="text" id="pr-google-search" placeholder="Si se deja vacío, se usa el nombre del proyecto">
       </label>
+      <label class="inline-check">
+        <input type="checkbox" id="pr-article-completion-pending">
+        Pendiente de completar artículo
+      </label>
     </fieldset>
 
     <fieldset class="dialog-section">
@@ -230,9 +235,8 @@
 
     <fieldset class="dialog-section">
       <legend>Clasificación</legend>
-      <label>Regiones
-        <select id="pr-regions" multiple size="4"></select>
-      </label>
+      <label>Regiones — podés elegir más de una</label>
+      <div id="pr-regions" class="check-list"></div>
       <label>Rutas *</label>
       <div class="tag-picker">
         <div id="pr-roads-chips" class="tag-chips"></div>
@@ -249,6 +253,6 @@
   </form>
 </dialog>
 
-<script src="app.js?v=10"></script>
+<script src="app.js?v=11"></script>
 </body>
 </html>
