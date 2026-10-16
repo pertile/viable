@@ -272,6 +272,18 @@ tbody tr:hover { background: #f7f9fb; }
   font-weight: 600;
 }
 
+.publication-tag {
+  display: inline-block;
+  border-radius: 4px;
+  padding: 0.15rem 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.publication-publish { background: #d9eee3; color: #14532d; }
+.publication-draft { background: #e8e8e8; color: #454545; }
+
 /* ---- Dialog (popup de evento) ---- */
 
 dialog#event-dialog {

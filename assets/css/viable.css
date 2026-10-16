@@ -377,6 +377,15 @@
   margin-top: 4.5rem;
 }
 
+/* Reserva espacio inferior según el nivel más bajo de etiquetas */
+.timeline-bar-with-dates.timeline-bar-bottom-tier-1 {
+  margin-bottom: 5.5rem;
+}
+
+.timeline-bar-with-dates.timeline-bar-bottom-tier-2 {
+  margin-bottom: 7.25rem;
+}
+
 .timeline-bar-simple {
   margin: 0.25rem 0;
 }

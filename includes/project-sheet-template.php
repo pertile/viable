@@ -132,8 +132,18 @@ $state_dates = [
         </div>
 
         <?php if ($state_lower === 'en obras' && $timeline): ?>
+            <?php
+            $bottom_tier = 0;
+            if (!empty($timeline['has_full_dates'])) {
+                foreach ($timeline_markers as $marker) {
+                    if (isset($marker['pct']) && $marker['pct'] !== null && ($marker['placement'] ?? 'top') === 'bottom') {
+                        $bottom_tier = max($bottom_tier, (int) ($marker['tier'] ?? 0));
+                    }
+                }
+            }
+            ?>
             <div class="progress-bar-container progress-timeline-container">
-                <div class="viable-timeline-rail timeline-bar<?= !empty($timeline['has_full_dates']) ? ' timeline-bar-with-dates' : ' timeline-bar-simple' ?>">
+                <div class="viable-timeline-rail timeline-bar<?= !empty($timeline['has_full_dates']) ? ' timeline-bar-with-dates timeline-bar-bottom-tier-' . $bottom_tier : ' timeline-bar-simple' ?>">
                     <?php if ($timeline['bar_end_pct'] !== null): ?>
                         <div class="viable-timeline-fill" style="width:<?= esc_attr(number_format((float) $timeline['bar_end_pct'], 3, '.', '')) ?>%;">
                             <span class="progress-value-inside"><?= esc_html(viable_format_percent($timeline['progress'])) ?>%</span>

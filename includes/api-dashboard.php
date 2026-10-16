@@ -116,7 +116,7 @@ function viable_get_projects_dashboard($request) {
 
     $args = [
         'post_type' => 'project',
-        'post_status' => 'publish',
+        'post_status' => ['publish', 'draft'],
         'posts_per_page' => -1,
         'orderby' => 'meta_value',
         'meta_key' => 'code',
@@ -157,6 +157,10 @@ function viable_get_projects_dashboard($request) {
 
     $results = [];
     foreach ($project_ids as $id) {
+        if (!current_user_can('edit_post', $id)) {
+            continue;
+        }
+
         $regions = get_field('regions', $id);
         $region_ids = viable_normalize_region_ids($regions);
 
@@ -191,6 +195,7 @@ function viable_get_projects_dashboard($request) {
 
         $results[] = [
             'id' => $id,
+            'status' => get_post_status($id),
             'code' => get_field('code', $id),
             'title' => get_the_title($id),
             'short_description' => get_field('short_description', $id),

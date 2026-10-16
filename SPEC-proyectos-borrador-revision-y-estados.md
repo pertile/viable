@@ -2,27 +2,36 @@
 
 ## Objetivo
 
-Incorporar un indicador editorial para proyectos publicados, validar la relación entre avance y etapa operativa y mejorar la información de fechas en sus visualizaciones.
+Permitir gestionar desde el cliente interno si un proyecto está publicado o en borrador, mantener un indicador editorial independiente, validar la relación entre avance y etapa operativa y mejorar la información de fechas en las visualizaciones.
 
 ## Modelo actual relevante
 
-- El tipo de contenido `project` ya usa los estados de publicación de WordPress. El formulario interno guarda los proyectos como publicados.
+- El tipo de contenido `project` usa los estados de publicación de WordPress. El panel interno muestra y permite cambiar proyectos entre publicados y borradores.
 - El campo ACF `state` contiene `Proyecto`, `En licitación`, `Adjudicado`, `En obras`, `Paralizado`, `Finalizado` o `Cancelado`.
 - Ya existen los campos ACF `bid_date`, `award_date`, `start_date` y `end_date`.
-- La API del panel lista actualmente solo proyectos publicados. La ficha y los mapas públicos también deben conservar el comportamiento de no exponer contenido no publicado.
+- La API autenticada del panel lista proyectos publicados y en borrador. La ficha y los mapas públicos deben seguir excluyendo el contenido no publicado.
 - El gráfico temporal calcula “Finalización según pliego” a partir del inicio y el plazo, y hoy lo ubica sobre la barra.
 
 ## Requisitos funcionales
 
-### 1. Indicador editorial de artículo pendiente
+### 1. Estado de publicación en el cliente interno
 
-1. Crear el campo ACF booleano `article_completion_pending`, con etiqueta **Pendiente de completar artículo**.
+1. Incluir **Publicado** y **Borrador** como opciones de publicación en el formulario interno de proyectos.
+2. El listado autenticado incluye ambos estados y los identifica claramente.
+3. Guardar el formulario conserva la opción elegida en `post_status`; un proyecto nuevo se crea publicado por defecto.
+4. El título de un proyecto publicado puede abrir su URL pública. El título de un borrador debe abrir la edición autenticada de WordPress, nunca una URL pública.
+5. El endpoint interno solo devuelve proyectos que el usuario actual tenga permiso para editar.
+6. Las fichas, mapas, listados y endpoints públicos siguen excluyendo los borradores.
+
+### 2. Indicador editorial de artículo pendiente
+
+1. Crear el campo ACF booleano `article_completion_pending`, con etiqueta **Pendiente de completar artículo**, independiente de si el proyecto está publicado o en borrador.
 2. El campo se puede consultar y editar en el formulario interno del proyecto y se muestra como indicador visible en el listado del cliente.
-3. Activar el indicador no cambia `post_status`: el proyecto continúa publicado.
+3. Activar el indicador no cambia `post_status`: se conserva el estado de publicación elegido.
 4. Exponer el indicador únicamente en el endpoint autenticado del panel interno; no mostrarlo en la ficha pública, mapas ni endpoints públicos.
 5. El valor inicial es falso para los proyectos existentes y los nuevos.
 
-### 2. Validación del estado operativo y el avance
+### 3. Validación del estado operativo y el avance
 
 La escala numérica asociada a las etiquetas es:
 
@@ -42,7 +51,7 @@ La escala numérica asociada a las etiquetas es:
 4. Aplicar la regla en el editor interno, guardado ACF de wp-admin, REST y actualizaciones derivadas de eventos. No depender solo de la validación de interfaz.
 5. Ante una combinación inválida, rechazar el guardado manual con un mensaje claro. El recálculo automático debe conservar los valores actuales y no persistir una combinación inválida.
 
-### 3. Fechas bajo las etapas
+### 4. Fechas bajo las etapas
 
 En el diagrama de estados de la ficha del proyecto, mostrar debajo de cada etapa la fecha que corresponde al campo ya existente, cuando tenga valor:
 
@@ -59,7 +68,7 @@ En el diagrama de estados de la ficha del proyecto, mostrar debajo de cada etapa
 - En el diagrama, mostrar “Adjudicación”; conservar el valor ACF guardado como `Adjudicado` en el selector y en los datos.
 - En pantallas angostas, las fechas deben poder ajustarse en varias líneas sin superponerse con etapas, flechas u otras fechas.
 
-### 4. Ubicación de “Finalización según pliego”
+### 5. Ubicación de “Finalización según pliego”
 
 - En el gráfico de avance temporal, ubicar la fecha y etiqueta **Finalización según pliego** debajo de la barra.
 - Mantener **Última actualización** y **Fin** por encima de la barra.
@@ -68,13 +77,15 @@ En el diagrama de estados de la ficha del proyecto, mostrar debajo de cada etapa
 
 ## Criterios de aceptación
 
-1. Activar y guardar **Pendiente de completar artículo** conserva el valor al volver a abrir el formulario y muestra la etiqueta en el listado interno.
-2. Activar el indicador no modifica el estado publicado del proyecto; el indicador no aparece en endpoints ni vistas públicas.
-3. Con avance mayor a cero, `Proyecto`, `En licitación` y `Adjudicado` son rechazados tanto por guardados directos como por eventos.
-4. Con avance mayor a cero, `En obras`, `Paralizado`, `Finalizado` y `Cancelado` son aceptados; con avance cero se aceptan todos los estados.
-5. Los eventos y el recálculo automático no dejan persistida una combinación de estado y avance inválida.
-6. Las cuatro fechas se muestran debajo de la etapa correcta cuando están informadas y se omiten cuando no existen.
-7. “Finalización según pliego” aparece debajo de la barra, separado de “Finalización prevista”, “Última actualización” y “Fin” en escritorio y móvil.
+1. El cliente lista proyectos publicados y en borrador e indica visualmente el estado de publicación.
+2. Cambiar un proyecto a borrador o publicarlo desde el formulario persiste el estado seleccionado; los proyectos nuevos se crean publicados.
+3. Los borradores no se filtran a páginas, mapas ni endpoints públicos, y el acceso interno respeta permisos de edición por proyecto.
+4. Activar y guardar **Pendiente de completar artículo** conserva el valor al volver a abrir el formulario y muestra la etiqueta en el listado interno, sin cambiar `post_status`.
+5. Con avance mayor a cero, `Proyecto`, `En licitación` y `Adjudicado` son rechazados tanto por guardados directos como por eventos.
+6. Con avance mayor a cero, `En obras`, `Paralizado`, `Finalizado` y `Cancelado` son aceptados; con avance cero se aceptan todos los estados.
+7. Los eventos y el recálculo automático no dejan persistida una combinación de estado y avance inválida.
+8. Las cuatro fechas se muestran debajo de la etapa correcta cuando están informadas y se omiten cuando no existen.
+9. “Finalización según pliego” aparece debajo de la barra, separado de “Finalización prevista”, “Última actualización” y “Fin” en escritorio y móvil.
 
 ## Fuera de alcance
 

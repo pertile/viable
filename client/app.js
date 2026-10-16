@@ -56,6 +56,7 @@
     prLength: document.getElementById('pr-length'),
     prGoogleSearch: document.getElementById('pr-google-search'),
     prArticleCompletionPending: document.getElementById('pr-article-completion-pending'),
+    prPostStatus: document.getElementById('pr-post-status'),
     prState: document.getElementById('pr-state'),
     prProgress: document.getElementById('pr-progress'),
     prProgressUpdatedOn: document.getElementById('pr-progress-updated-on'),
@@ -319,11 +320,11 @@
 
   async function loadProjects() {
     if (!isConfigured()) {
-      els.tbody.innerHTML = '<tr><td colspan="12" class="hint">Configurá la conexión primero.</td></tr>';
+      els.tbody.innerHTML = '<tr><td colspan="13" class="hint">Configurá la conexión primero.</td></tr>';
       return;
     }
 
-    els.tbody.innerHTML = '<tr><td colspan="12" class="hint">Cargando...</td></tr>';
+    els.tbody.innerHTML = '<tr><td colspan="13" class="hint">Cargando...</td></tr>';
 
     const states = getSelectedStates();
     const region = els.filterRegion.value;
@@ -337,7 +338,7 @@
       projects = await apiFetch('/viable/v1/projects-dashboard?' + params.toString());
       renderTable();
     } catch (e) {
-      els.tbody.innerHTML = '<tr><td colspan="12" class="form-msg error">' + escapeHtml(e.message) + '</td></tr>';
+      els.tbody.innerHTML = '<tr><td colspan="13" class="form-msg error">' + escapeHtml(e.message) + '</td></tr>';
     }
   }
 
@@ -362,7 +363,7 @@
     updateBulkBar();
 
     if (!projects.length) {
-      els.tbody.innerHTML = '<tr><td colspan="12" class="hint">No hay proyectos con estos filtros.</td></tr>';
+      els.tbody.innerHTML = '<tr><td colspan="13" class="hint">No hay proyectos con estos filtros.</td></tr>';
       return;
     }
 
@@ -377,15 +378,18 @@
       const regionsText = p.regions && p.regions.length ? escapeHtml(p.regions.join(', ')) : '<span class="hint">—</span>';
       const roadsText = p.roads && p.roads.length ? escapeHtml(p.roads.join(', ')) : '<span class="hint">—</span>';
       const titleTooltip = p.short_description ? ` title="${escapeHtml(p.short_description)}"` : '';
-      const titleText = p.has_content && p.url
-        ? `<a href="${escapeHtml(p.url)}" target="_blank" rel="noopener"${titleTooltip}>${escapeHtml(p.title)}</a>`
-        : `<span${titleTooltip}>${escapeHtml(p.title)}</span>`;
+      const titleText = p.status === 'draft'
+        ? `<a href="${wpAdminEditUrl(p.id)}" target="_blank" rel="noopener"${titleTooltip}>${escapeHtml(p.title)}</a>`
+        : p.has_content && p.url
+          ? `<a href="${escapeHtml(p.url)}" target="_blank" rel="noopener"${titleTooltip}>${escapeHtml(p.title)}</a>`
+          : `<span${titleTooltip}>${escapeHtml(p.title)}</span>`;
 
       tr.innerHTML = `
         <td><input type="checkbox" class="row-check" data-id="${p.id}"></td>
         <td>${p.code ? escapeHtml(p.code) : '<span class="hint">—</span>'}</td>
         <td>${p.type ? escapeHtml(p.type) : '<span class="hint">—</span>'}</td>
         <td>${titleText}</td>
+        <td><span class="publication-tag publication-${escapeHtml(p.status)}">${p.status === 'draft' ? 'Borrador' : 'Publicado'}</span></td>
         <td>${regionsText}</td>
         <td>${roadsText}</td>
         <td><span class="state-tag state-${escapeHtml((p.state || '').toLowerCase())}">${escapeHtml(p.state || '—')}</span></td>
@@ -714,6 +718,7 @@
     els.prLength.value = acf.length || acf.length === 0 ? acf.length : '';
     els.prGoogleSearch.value = acf.google_search || '';
     els.prArticleCompletionPending.checked = Boolean(acf.article_completion_pending);
+    els.prPostStatus.value = full.status === 'draft' ? 'draft' : 'publish';
     els.prState.value = acf.state || 'Proyecto';
     els.prProgress.value = (acf.progress || acf.progress === 0) ? acf.progress : '';
     els.prProgressUpdatedOn.value = normalizeDateForInput(acf.progress_updated_on);
@@ -744,6 +749,7 @@
       els.projectDialogTitle.textContent = 'Nuevo proyecto';
       els.prState.value = 'Proyecto';
       els.prArticleCompletionPending.checked = false;
+      els.prPostStatus.value = 'publish';
       els.projectDialog.showModal();
       return;
     }
@@ -806,7 +812,7 @@
 
     const payload = {
       title: els.prTitle.value.trim(),
-      status: 'publish',
+      status: els.prPostStatus.value,
       acf: acf,
     };
 

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Proyectos — viable</title>
-<link rel="stylesheet" href="style.css?v=10">
+<link rel="stylesheet" href="style.css?v=11">
 </head>
 <body>
 
@@ -70,6 +70,7 @@
           <th>Código</th>
           <th>Tipo</th>
           <th>Nombre</th>
+          <th>Publicación</th>
           <th>Región</th>
           <th>Rutas</th>
           <th>Estado</th>
@@ -81,7 +82,7 @@
         </tr>
       </thead>
       <tbody id="projects-tbody">
-        <tr><td colspan="12" class="hint">Cargando...</td></tr>
+        <tr><td colspan="13" class="hint">Cargando...</td></tr>
       </tbody>
     </table>
   </section>
@@ -188,6 +189,12 @@
         <input type="checkbox" id="pr-article-completion-pending">
         Pendiente de completar artículo
       </label>
+      <label>Publicación
+        <select id="pr-post-status">
+          <option value="publish">Publicado</option>
+          <option value="draft">Borrador</option>
+        </select>
+      </label>
     </fieldset>
 
     <fieldset class="dialog-section">
@@ -253,6 +260,6 @@
   </form>
 </dialog>
 
-<script src="app.js?v=11"></script>
+<script src="app.js?v=12"></script>
 </body>
 </html>
