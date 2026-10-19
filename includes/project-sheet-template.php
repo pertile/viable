@@ -131,6 +131,16 @@ $state_dates = [
             </div>
         </div>
 
+        <?php if ($state_lower === 'paralizado' && is_numeric($progress ?? null)): ?>
+            <?php $progress_date = viable_format_date_dmy($progress_updated_on ?? null); ?>
+            <div class="paralizado-progress">
+                Avance: <strong><?= esc_html(viable_format_percent($progress)) ?>%</strong>
+                <?php if ($progress_date): ?>
+                    <span class="paralizado-progress-date">(al <?= esc_html($progress_date) ?>)</span>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+
         <?php if ($state_lower === 'en obras' && $timeline): ?>
             <?php
             $bottom_tier = 0;
