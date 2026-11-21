@@ -1,0 +1,11 @@
+# Datos propios de cada sitio: viven en wp-content/uploads/viable/, no en el plugin.
+# Así `git pull` nunca pisa los trazados de un sitio.
+assets/data/*.gpkg
+assets/data/*.gpkg-shm
+assets/data/*.gpkg-wal
+
+__pycache__/
+*.pyc
+
+# Datos de conexión para tools/deploy.sh
+tools/deploy.local
