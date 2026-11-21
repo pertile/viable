@@ -11,7 +11,8 @@
 set -euo pipefail
 
 here="$(cd "$(dirname "$0")" && pwd)"
-[ -f "$here/deploy.local" ] && . "$here/deploy.local"
+# Se limpian CRLF y BOM por si el archivo se creó en Windows
+[ -f "$here/deploy.local" ] && . <(sed -e 's/\r$//' -e '1s/^\xEF\xBB\xBF//' "$here/deploy.local")
 SSH_HOST="${SSH_HOST:-hostinger}"
 
 site="${1:?Indicá el dominio, por ejemplo: tools/subir-trazados.sh midominio.com}"

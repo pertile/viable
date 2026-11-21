@@ -11,7 +11,8 @@
 set -euo pipefail
 
 cd "$(dirname "$0")"
-[ -f deploy.local ] && . ./deploy.local
+# Se limpian CRLF y BOM por si el archivo se creó en Windows
+[ -f deploy.local ] && . <(sed -e 's/\r$//' -e '1s/^\xEF\xBB\xBF//' deploy.local)
 
 SSH_HOST="${SSH_HOST:-hostinger}"
 PLUGIN_SLUG="${PLUGIN_SLUG:-viable}"
