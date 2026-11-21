@@ -226,6 +226,15 @@
     return map;
   }
 
+  /** Fondos (Mapa / Satélite) y planos. Devuelve { setOverlays } */
+  function addMapLayers(targetMap) {
+    if (window.ViableMapLayers) return ViableMapLayers.setup(targetMap);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '\u00a9 OpenStreetMap contributors'
+    }).addTo(targetMap);
+    return { setOverlays: function () {} };
+  }
+
   /** Construye la URL de la API con los filtros actuales */
   function buildApiUrl(baseUrl, params) {
     const url = new URL(baseUrl, window.location.origin);
@@ -236,7 +245,7 @@
   }
 
   /* ── Expand modal (reutilizable) ───────────────────────────── */
-  function addExpandButton(container, features, colorMap, filterOptions, baseParams, restUrl) {
+  function addExpandButton(container, features, colorMap, filterOptions, baseParams, restUrl, overlays) {
     const btn = document.createElement('button');
     btn.className = 'viable-map-expand-btn';
     btn.title = 'Ampliar mapa';
@@ -245,11 +254,11 @@
 
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      openModal(features, colorMap, filterOptions, baseParams, restUrl);
+      openModal(features, colorMap, filterOptions, baseParams, restUrl, overlays);
     });
   }
 
-  function openModal(features, colorMap, filterOptions, baseParams, restUrl) {
+  function openModal(features, colorMap, filterOptions, baseParams, restUrl, overlays) {
     const overlay = document.createElement('div');
     overlay.className = 'viable-map-modal-overlay';
 
@@ -270,9 +279,8 @@
     document.body.appendChild(overlay);
 
     const bigMap = L.map(mapDiv).setView([-34.6, -58.4], 6);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '\u00a9 OpenStreetMap contributors'
-    }).addTo(bigMap);
+    const bigMapLayers = addMapLayers(bigMap);
+    bigMapLayers.setOverlays(overlays || []);
 
     let modalFeatures = features;
     let modalColorMap = colorMap;
@@ -295,7 +303,7 @@
       lc.addTo(bigMap);
       modalLegend = lc;
       if (modalLayers.length) {
-        bigMap.fitBounds(L.featureGroup(modalLayers).getBounds(), { padding: [30, 30] });
+        bigMap.fitBounds(L.featureGroup(modalLayers).getBounds(), { padding: [30, 30], maxZoom: 18 });
       }
     }
 
@@ -318,6 +326,7 @@
           const feat = gj.features || [];
           const cmap = buildColorMap(feat);
           renderModalFeatures(feat, cmap);
+          bigMapLayers.setOverlays(gj.overlays || []);
         } catch(e) { console.error(e); }
       });
     }
@@ -576,15 +585,14 @@
 
     // Crear mapa Leaflet
     const map = L.map(el).setView([-34.6, -58.4], 6);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '\u00a9 OpenStreetMap contributors'
-    }).addTo(map);
+    const mapLayers = addMapLayers(map);
 
     // Estado mutable
     let currentLayers = [];
     let currentLegend = null;
     let currentFeatures = [];
     let currentColorMap = {};
+    let currentOverlays = [];
 
     /** Carga (o recarga) los datos según params */
     async function loadData(params) {
@@ -607,6 +615,8 @@
         const features = geojson.features || [];
         const projectsList = geojson.projects || [];
         currentFeatures = features;
+        currentOverlays = geojson.overlays || [];
+        mapLayers.setOverlays(currentOverlays);
 
         if (features.length === 0) {
           el.classList.add('viable-map-empty');
@@ -623,7 +633,7 @@
         // Ajustar bounds
         if (layers.length) {
           const group = L.featureGroup(layers);
-          map.fitBounds(group.getBounds(), { padding: [20, 20] });
+          map.fitBounds(group.getBounds(), { padding: [20, 20], maxZoom: 18 });
         }
 
         // Leyenda
@@ -645,7 +655,7 @@
         if (showExpand) {
           const existingBtn = el.querySelector('.viable-map-expand-btn');
           if (existingBtn) existingBtn.remove();
-          addExpandButton(el, currentFeatures, currentColorMap, filterOptions, baseParams, restUrl);
+          addExpandButton(el, currentFeatures, currentColorMap, filterOptions, baseParams, restUrl, currentOverlays);
         }
 
         // Listado de proyectos

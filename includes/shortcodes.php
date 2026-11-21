@@ -143,10 +143,11 @@ function viable_map_shortcode($atts) {
     // Enqueue Leaflet + JS universal
     wp_enqueue_style('leaflet', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');
     wp_enqueue_script('leaflet', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js', [], null, true);
+    viable_register_map_layers_script();
     wp_enqueue_script(
         'viable-map-universal',
         VIABLE_URL . 'viable-map-universal.js',
-        ['leaflet'],
+        ['leaflet', 'viable-map-layers'],
         file_exists(VIABLE_PATH . 'viable-map-universal.js') ? filemtime(VIABLE_PATH . 'viable-map-universal.js') : null,
         true
     );

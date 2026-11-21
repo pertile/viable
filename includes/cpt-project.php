@@ -71,10 +71,12 @@ add_action('wp_enqueue_scripts', function () {
         true
     );
 
+    viable_register_map_layers_script();
+
     wp_enqueue_script(
         'viable-map',
         VIABLE_URL . 'viable-map.js',
-        ['leaflet'],
+        ['leaflet', 'viable-map-layers'],
         file_exists(VIABLE_PATH . 'viable-map.js') ? filemtime(VIABLE_PATH . 'viable-map.js') : null,
         true
     );

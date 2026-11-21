@@ -594,6 +594,27 @@ add_action( 'acf/include_fields', function() {
 				'allow_in_bindings' => 0,
 				'preview_size' => 'medium',
 			),
+			array(
+				'key' => 'field_viable_overlay_tiles',
+				'label' => 'Planos (PMTiles)',
+				'name' => 'overlay_tiles',
+				'aria-label' => '',
+				'type' => 'file',
+				'instructions' => 'Archivo .pmtiles con los planos georreferenciados. Se muestra sobre el mapa del proyecto al acercarse. Se genera con tools/tiles-to-pmtiles.py.',
+				'required' => 0,
+				'conditional_logic' => 0,
+				'wrapper' => array(
+					'width' => '',
+					'class' => '',
+					'id' => '',
+				),
+				'return_format' => 'id',
+				'library' => 'all',
+				'min_size' => '',
+				'max_size' => '',
+				'mime_types' => 'pmtiles',
+				'allow_in_bindings' => 0,
+			),
 		),
 		'location' => array(
 			array(

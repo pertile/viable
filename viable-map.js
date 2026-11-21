@@ -16,6 +16,8 @@ document.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
+  const overlays = window.ViableMapLayers ? ViableMapLayers.parseOverlays(el) : [];
+
   const uniqueCodes = [...new Set([projectCode, ...siblingCodes])];
   const useUniversalEndpoint = uniqueCodes.length > 1;
   const universalBase = restBase ? restBase.replace(/\/geojson$/, '/map-projects') : `${window.location.origin}/wp-json/viable/v1/map-projects`;
@@ -52,10 +54,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // Crear el mapa
     const map = L.map(el).setView([-34.6, -58.4], 10);
 
-    // Agregar capa de tiles
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
+    // Fondos (Mapa / Satélite) y planos del proyecto
+    addMapLayers(map);
+
+    function addMapLayers(targetMap) {
+      if (window.ViableMapLayers) {
+        // Con planos, arrancar en satélite (salvo que el visitante ya haya elegido otro fondo)
+        ViableMapLayers.setup(targetMap, { defaultBase: overlays.length ? 'Satélite' : 'Mapa' }).setOverlays(overlays);
+      } else {
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '\u00a9 OpenStreetMap contributors'
+        }).addTo(targetMap);
+      }
+    }
 
     // Colores para diferentes tramos
     const colors = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22', '#34495e'];
@@ -102,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Ajustar el zoom para que quepan todos los features
     const group = L.featureGroup(layers);
-    map.fitBounds(group.getBounds(), { padding: [20, 20] });
+    map.fitBounds(group.getBounds(), { padding: [20, 20], maxZoom: 18 });
 
     // Botón para expandir el mapa
     const expandBtn = document.createElement('button');
@@ -137,13 +148,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Inicializar mapa grande
       const bigMap = L.map(mapDiv).setView([-34.6, -58.4], 10);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '\u00a9 OpenStreetMap contributors'
-      }).addTo(bigMap);
+      addMapLayers(bigMap);
 
       const bigLayers = drawFeatures(bigMap);
       const bigGroup = L.featureGroup(bigLayers);
-      bigMap.fitBounds(bigGroup.getBounds(), { padding: [30, 30] });
+      bigMap.fitBounds(bigGroup.getBounds(), { padding: [30, 30], maxZoom: 18 });
 
       // Cerrar modal
       const closeModal = () => {

@@ -196,6 +196,8 @@ $state_dates = [
              data-code="<?= esc_attr($code) ?>"
              data-sibling-codes="<?= esc_attr(implode(',', $map_codes)) ?>"
              data-rest-url="<?= esc_url(rest_url('viable/v1/geojson')) ?>"
+             <?php $viable_overlay = viable_get_project_overlay($pid); ?>
+             data-overlays="<?= esc_attr(wp_json_encode($viable_overlay ? [$viable_overlay] : [])) ?>"
              style="height: 300px; width: 100%;">
         </div>
     <?php elseif ($map): ?>

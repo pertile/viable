@@ -501,6 +501,7 @@ function viable_get_map_projects($request) {
 
     $features = [];
     $projects_list = [];
+    $overlays = [];
 
     while ($projects->have_posts()) {
         $projects->the_post();
@@ -575,6 +576,12 @@ function viable_get_map_projects($request) {
             ];
         }
 
+        // Planos georreferenciados (PMTiles) del proyecto
+        $overlay = viable_get_project_overlay($pid);
+        if ($overlay) {
+            $overlays[] = $overlay;
+        }
+
         // Buscar geometría
         $stmt = $db->prepare("SELECT * FROM {$table_name} WHERE code = :code");
         $stmt->bindValue(':code', $code, SQLITE3_TEXT);
@@ -614,6 +621,7 @@ function viable_get_map_projects($request) {
         'type'     => 'FeatureCollection',
         'features' => $features,
         'projects' => $projects_list,
+        'overlays' => $overlays,
     ]);
 }
 

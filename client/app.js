@@ -378,11 +378,14 @@
       const regionsText = p.regions && p.regions.length ? escapeHtml(p.regions.join(', ')) : '<span class="hint">—</span>';
       const roadsText = p.roads && p.roads.length ? escapeHtml(p.roads.join(', ')) : '<span class="hint">—</span>';
       const titleTooltip = p.short_description ? ` title="${escapeHtml(p.short_description)}"` : '';
-      const titleText = p.status === 'draft'
-        ? `<a href="${wpAdminEditUrl(p.id)}" target="_blank" rel="noopener"${titleTooltip}>${escapeHtml(p.title)}</a>`
-        : p.has_content && p.url
-          ? `<a href="${escapeHtml(p.url)}" target="_blank" rel="noopener"${titleTooltip}>${escapeHtml(p.title)}</a>`
-          : `<span${titleTooltip}>${escapeHtml(p.title)}</span>`;
+      const titleHref = !p.has_content
+        ? null
+        : p.status === 'draft'
+          ? wpAdminEditUrl(p.id)
+          : p.url ? escapeHtml(p.url) : null;
+      const titleText = titleHref
+        ? `<a href="${titleHref}" target="_blank" rel="noopener"${titleTooltip}>${escapeHtml(p.title)}</a>`
+        : `<span${titleTooltip}>${escapeHtml(p.title)}</span>`;
 
       tr.innerHTML = `
         <td><input type="checkbox" class="row-check" data-id="${p.id}"></td>
