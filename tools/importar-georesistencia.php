@@ -133,6 +133,8 @@ foreach ($obras as $code => $rows) {
 
     $type_raw = $val($r, 'TipoObra');
     $type = $type_raw ? ($TYPE_MAP[mb_strtolower($type_raw)] ?? $type_raw) : 'Pavimento';
+    $type_default = !$type_raw;   // deducido: solo se usa al crear
+    $state_default = false;
     if (!in_array($type, $allowed_types, true)) {
         $problems[] = "$code: tipo \"$type\" no está en la lista de Ajustes → Obras";
     }
@@ -155,6 +157,7 @@ foreach ($obras as $code => $rows) {
         $state = 'En obras';
     } else {
         $state = 'Proyecto';
+        $state_default = true;
         $problems[] = "$code ($title): sin fechas ni estado; queda como Proyecto, revisar";
     }
 
@@ -182,7 +185,7 @@ foreach ($obras as $code => $rows) {
         }
     }
 
-    $plan[$code] = compact('title', 'type', 'state', 'end', 'start', 'length', 'funding', 'surface', 'region_id', 'muni') + [
+    $plan[$code] = compact('title', 'type', 'type_default', 'state', 'state_default', 'end', 'start', 'length', 'funding', 'surface', 'region_id', 'muni') + [
         'summary' => $val($r, 'short_description') ?: '',
         'links'   => array_keys($links),
     ];
@@ -247,6 +250,7 @@ if (!$apply) {
 /* ── Aplicar ───────────────────────────────────────────────────────── */
 
 $created = $updated = 0;
+$existing_before = $existing;
 foreach ($plan as $code => $p) {
     $pid = $existing[$code] ?? 0;
     if ($pid && !$update) {
@@ -267,20 +271,31 @@ foreach ($plan as $code => $p) {
         $existing[$code] = $pid;
         $created++;
     } else {
-        wp_update_post(['ID' => $pid, 'post_title' => $p['title']]);
+        // El título también se conserva si en el GeoPackage ya no hay título ni nombre de obra
+        if ($p['title'] !== '') {
+            wp_update_post(['ID' => $pid, 'post_title' => $p['title']]);
+        }
         $updated++;
     }
 
-    update_field($F['code'], $code, $pid);
-    update_field($F['summary'], $p['summary'], $pid);
-    update_field($F['type'], $p['type'], $pid);
-    update_field($F['state'], $p['state'], $pid);
-    update_field($F['length'], $p['length'], $pid);
-    update_field($F['start'], $p['start'] ?: '', $pid);
-    update_field($F['end'], $p['end'] ?: '', $pid);
-    update_field($F['funding'], $p['funding'] ?: '', $pid);
-    update_field($F['surface'], $p['surface'] ?: '', $pid);
-    update_field($F['regions'], $p['region_id'] ? [$p['region_id']] : [], $pid);
+    // Al actualizar, un dato vacío en el GeoPackage NO borra lo que ya está en la ficha
+    $is_new = !isset($existing_before[$code]);
+    $set = function ($field, $value) use ($pid, $is_new) {
+        if ($is_new || ($value !== null && $value !== '' && $value !== [])) {
+            update_field($field, $value, $pid);
+        }
+    };
+
+    $set($F['code'], $code);
+    $set($F['summary'], $p['summary']);
+    $set($F['type'], ($p['type_default'] && !$is_new) ? null : $p['type']);
+    $set($F['state'], ($p['state_default'] && !$is_new) ? null : $p['state']);
+    $set($F['length'], $p['length']);
+    $set($F['start'], $p['start'] ?: '');
+    $set($F['end'], $p['end'] ?: '');
+    $set($F['funding'], $p['funding'] ?: '');
+    $set($F['surface'], $p['surface'] ?: '');
+    $set($F['regions'], $p['region_id'] ? [$p['region_id']] : []);
 }
 WP_CLI::log("Fichas creadas: $created, actualizadas: $updated");
 
