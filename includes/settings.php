@@ -14,9 +14,11 @@ function viable_settings_defaults() {
         'roads_label'     => 'Rutas',
         'roads_required'  => 1,
         'regions_label'   => 'Regiones',
+        'region_term_ids' => [], // vacío = subcategorías de "Regiones"
         'length_unit'     => 'km',
         'funding_options' => '',
         'surface_options' => '',
+        'category_map'    => 1, // mapa y listados en las páginas de categoría
     ];
 }
 
@@ -109,8 +111,16 @@ function viable_sanitize_settings($input) {
             $out[$key] = $value !== '' ? $value : viable_settings_defaults()[$key];
         }
     }
+    $ids = isset($input['region_term_ids']) && is_array($input['region_term_ids']) ? $input['region_term_ids'] : [];
+    $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
+    $out['region_term_ids'] = array_values(array_filter($ids, function ($id) {
+        $term = get_term($id, 'category');
+        return $term && !is_wp_error($term);
+    }));
+
     $out['use_tender'] = empty($input['use_tender']) ? 0 : 1;
     $out['roads_required'] = empty($input['roads_required']) ? 0 : 1;
+    $out['category_map'] = empty($input['category_map']) ? 0 : 1;
     $out['length_unit'] = (isset($input['length_unit']) && $input['length_unit'] === 'm') ? 'm' : 'km';
 
     if (empty(viable_lines_to_list($out['project_types']))) {
@@ -193,7 +203,35 @@ function viable_render_settings_page() {
                     <th scope="row"><label for="viable-regions-label">Nombre del campo de regiones</label></th>
                     <td>
                         <input id="viable-regions-label" type="text" class="regular-text" name="<?= esc_attr($name('regions_label')) ?>" value="<?= esc_attr($s['regions_label']) ?>">
-                        <p class="description">Por ejemplo "Regiones" o "Municipios". Las opciones son las subcategorías de la categoría "Regiones".</p>
+                        <p class="description">Por ejemplo "Regiones" o "Municipios".</p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">Categorías de regiones</th>
+                    <td>
+                        <?php
+                        $selected = array_map('intval', (array) $s['region_term_ids']);
+                        $all_categories = get_categories(['hide_empty' => false, 'orderby' => 'name', 'order' => 'ASC']);
+                        ?>
+                        <fieldset style="max-height:260px;overflow:auto;border:1px solid #dcdcde;padding:8px 12px;background:#fff;max-width:420px">
+                            <?php foreach ($all_categories as $cat): ?>
+                                <label style="display:block">
+                                    <input type="checkbox" name="<?= esc_attr($name('region_term_ids')) ?>[]" value="<?= (int) $cat->term_id ?>" <?php checked(in_array((int) $cat->term_id, $selected, true)); ?>>
+                                    <?= esc_html($cat->name) ?>
+                                    <?php if ($cat->parent): ?><span class="description">(en <?= esc_html(get_cat_name($cat->parent)) ?>)</span><?php endif; ?>
+                                </label>
+                            <?php endforeach; ?>
+                        </fieldset>
+                        <p class="description">Las categorías que se pueden elegir como región de un proyecto. Si no marcás ninguna, se usan las subcategorías de "Regiones".</p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">Páginas de categoría</th>
+                    <td>
+                        <label>
+                            <input type="checkbox" name="<?= esc_attr($name('category_map')) ?>" value="1" <?php checked($s['category_map'], 1); ?>>
+                            Mostrar el mapa de obras y los listados en las páginas de categoría
+                        </label>
                     </td>
                 </tr>
                 <tr>

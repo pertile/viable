@@ -1,6 +1,14 @@
 <?php
 
 /**
+ * IDs de categorías marcadas como regiones en Ajustes → Obras (vacío = usar "Regiones").
+ */
+function viable_get_region_term_ids() {
+    $ids = viable_setting('region_term_ids');
+    return is_array($ids) ? array_values(array_filter(array_map('intval', $ids))) : [];
+}
+
+/**
  * Devuelve la categoría padre contenedora de regiones.
  * Busca primero por slug "regiones" y luego por nombre "Regiones".
  */
@@ -23,6 +31,18 @@ function viable_get_regions_parent_term() {
  * (hijas, nietas y niveles inferiores).
  */
 function viable_get_region_categories($args = []) {
+    // Categorías elegidas explícitamente en Ajustes → Obras
+    $ids = viable_get_region_term_ids();
+    if ($ids) {
+        return get_categories(array_merge([
+            'taxonomy'   => 'category',
+            'hide_empty' => false,
+            'include'    => $ids,
+            'orderby'    => 'name',
+            'order'      => 'ASC',
+        ], $args));
+    }
+
     $parent = viable_get_regions_parent_term();
     if (!$parent) {
         return [];
@@ -44,6 +64,13 @@ function viable_get_region_categories($args = []) {
  * Cada item es ['term' => WP_Term, 'depth' => int].
  */
 function viable_get_region_categories_hierarchy() {
+    // Categorías elegidas explícitamente: lista plana, por nombre
+    if (viable_get_region_term_ids()) {
+        return array_map(function ($term) {
+            return ['term' => $term, 'depth' => 0];
+        }, viable_get_region_categories());
+    }
+
     $parent = viable_get_regions_parent_term();
     if (!$parent) {
         return [];

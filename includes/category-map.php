@@ -4,7 +4,7 @@ add_filter('the_content', 'viable_add_category_map', 1);
 
 function viable_add_category_map($content) {
     
-    if (!is_category()) {
+    if (!is_category() || !viable_setting('category_map')) {
         return $content;
     }
     
