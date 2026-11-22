@@ -296,7 +296,7 @@
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
 
-    const bigMap = L.map(mapDiv, window.ViableMapLayers ? ViableMapLayers.mapOptions(bearing) : {}).setView([-34.6, -58.4], 6);
+    const bigMap = L.map(mapDiv, (window.ViableMapLayers && typeof ViableMapLayers.mapOptions === "function") ? ViableMapLayers.mapOptions(bearing) : {}).setView([-34.6, -58.4], 6);
     const bigMapLayers = addMapLayers(bigMap, base);
     bigMapLayers.setOverlays(overlays || []);
 
@@ -603,7 +603,7 @@
     }
 
     // Crear mapa Leaflet
-    const map = L.map(el, window.ViableMapLayers ? ViableMapLayers.mapOptions(el.dataset.bearing) : {}).setView([-34.6, -58.4], 6);
+    const map = L.map(el, (window.ViableMapLayers && typeof ViableMapLayers.mapOptions === "function") ? ViableMapLayers.mapOptions(el.dataset.bearing) : {}).setView([-34.6, -58.4], 6);
     const mapLayers = addMapLayers(map, el.dataset.base);
 
     // Estado mutable

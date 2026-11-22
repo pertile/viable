@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Crear el mapa
-    const map = L.map(el, window.ViableMapLayers ? ViableMapLayers.mapOptions(el.dataset.bearing) : {}).setView([-34.6, -58.4], 10);
+    const map = L.map(el, (window.ViableMapLayers && typeof ViableMapLayers.mapOptions === "function") ? ViableMapLayers.mapOptions(el.dataset.bearing) : {}).setView([-34.6, -58.4], 10);
 
     // Fondos (Mapa / Satélite) y planos del proyecto
     addMapLayers(map);
@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
       document.body.appendChild(overlay);
 
       // Inicializar mapa grande
-      const bigMap = L.map(mapDiv, window.ViableMapLayers ? ViableMapLayers.mapOptions(el.dataset.bearing) : {}).setView([-34.6, -58.4], 10);
+      const bigMap = L.map(mapDiv, (window.ViableMapLayers && typeof ViableMapLayers.mapOptions === "function") ? ViableMapLayers.mapOptions(el.dataset.bearing) : {}).setView([-34.6, -58.4], 10);
       addMapLayers(bigMap);
 
       const bigLayers = drawFeatures(bigMap);
