@@ -19,6 +19,10 @@ function viable_settings_defaults() {
         'funding_options' => '',
         'surface_options' => '',
         'category_map'    => 1, // mapa y listados en las páginas de categoría
+        'mapbox_token'    => '',
+        'mapbox_style'    => '', // mapbox://styles/usuario/estilo
+        'mapbox_label'    => 'Mapbox',
+        'default_base'    => 'Mapa', // Mapa | Satélite | Mapbox
     ];
 }
 
@@ -84,6 +88,40 @@ function viable_format_length($length) {
     return $length . ' ' . viable_get_length_unit();
 }
 
+/**
+ * Acepta "mapbox://styles/usuario/estilo", la URL de Mapbox Studio o "usuario/estilo".
+ * Devuelve ['user' => …, 'id' => …] o null.
+ */
+function viable_parse_mapbox_style($style) {
+    $style = trim((string) $style);
+    if (preg_match('#^mapbox://styles/([A-Za-z0-9_-]+)/([A-Za-z0-9_-]+)#', $style, $m)
+        || preg_match('#api\.mapbox\.com/styles/v1/([A-Za-z0-9_-]+)/([A-Za-z0-9_-]+)#', $style, $m)
+        || preg_match('#studio\.mapbox\.com/styles/([A-Za-z0-9_-]+)/([A-Za-z0-9_-]+)#', $style, $m)
+        || preg_match('#^([A-Za-z0-9_-]+)/([A-Za-z0-9_-]+)$#', $style, $m)) {
+        return ['user' => $m[1], 'id' => $m[2]];
+    }
+    return null;
+}
+
+/** Configuración de fondos para el JS de los mapas. */
+function viable_map_client_config() {
+    $mapbox = null;
+    $style = viable_parse_mapbox_style(viable_setting('mapbox_style'));
+    if ($style && viable_setting('mapbox_token')) {
+        $mapbox = [
+            'token' => viable_setting('mapbox_token'),
+            'user'  => $style['user'],
+            'style' => $style['id'],
+            'label' => viable_setting('mapbox_label'),
+        ];
+    }
+    $default = viable_setting('default_base');
+    if ($default === 'Mapbox') {
+        $default = $mapbox ? $mapbox['label'] : 'Mapa';
+    }
+    return ['mapbox' => $mapbox, 'defaultBase' => $default];
+}
+
 /* ====================================================================
  * Página de ajustes
  * ==================================================================== */
@@ -121,6 +159,21 @@ function viable_sanitize_settings($input) {
     $out['use_tender'] = empty($input['use_tender']) ? 0 : 1;
     $out['roads_required'] = empty($input['roads_required']) ? 0 : 1;
     $out['category_map'] = empty($input['category_map']) ? 0 : 1;
+
+    $out['mapbox_token'] = isset($input['mapbox_token']) ? preg_replace('/[^A-Za-z0-9._-]/', '', $input['mapbox_token']) : $out['mapbox_token'];
+    $out['mapbox_style'] = isset($input['mapbox_style']) ? sanitize_text_field($input['mapbox_style']) : $out['mapbox_style'];
+    if ($out['mapbox_style'] !== '' && !viable_parse_mapbox_style($out['mapbox_style'])) {
+        add_settings_error('viable_settings', 'viable_mapbox_style', 'El estilo de Mapbox no tiene el formato esperado (mapbox://styles/usuario/estilo).');
+    }
+    if ($out['mapbox_token'] !== '' && strpos($out['mapbox_token'], 'pk.') !== 0) {
+        add_settings_error('viable_settings', 'viable_mapbox_token', 'El token de Mapbox tiene que ser público (empieza con "pk."). Los tokens secretos ("sk.") no deben usarse en una página web.');
+        $out['mapbox_token'] = '';
+    }
+    if (isset($input['mapbox_label'])) {
+        $label = sanitize_text_field($input['mapbox_label']);
+        $out['mapbox_label'] = $label !== '' ? $label : 'Mapbox';
+    }
+    $out['default_base'] = in_array($input['default_base'] ?? '', ['Mapa', 'Satélite', 'Mapbox'], true) ? $input['default_base'] : 'Mapa';
     $out['length_unit'] = (isset($input['length_unit']) && $input['length_unit'] === 'm') ? 'm' : 'km';
 
     if (empty(viable_lines_to_list($out['project_types']))) {
@@ -223,6 +276,29 @@ function viable_render_settings_page() {
                             <?php endforeach; ?>
                         </fieldset>
                         <p class="description">Las categorías que se pueden elegir como región de un proyecto. Si no marcás ninguna, se usan las subcategorías de "Regiones".</p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="viable-mapbox-token">Mapbox</label></th>
+                    <td>
+                        <p><input id="viable-mapbox-token" type="text" class="large-text code" name="<?= esc_attr($name('mapbox_token')) ?>" value="<?= esc_attr($s['mapbox_token']) ?>" placeholder="pk.…" autocomplete="off"></p>
+                        <p><input type="text" class="large-text code" name="<?= esc_attr($name('mapbox_style')) ?>" value="<?= esc_attr($s['mapbox_style']) ?>" placeholder="mapbox://styles/usuario/estilo"></p>
+                        <p><input type="text" class="regular-text" name="<?= esc_attr($name('mapbox_label')) ?>" value="<?= esc_attr($s['mapbox_label']) ?>" placeholder="Nombre en el selector de fondos"></p>
+                        <p class="description">
+                            Token público (<code>pk.…</code>) y estilo de Mapbox Studio. Con los dos cargados, el estilo aparece como fondo en el selector.
+                            El token queda visible en el código de la página: en Mapbox, restringilo a las URL de este sitio.
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="viable-default-base">Fondo por defecto</label></th>
+                    <td>
+                        <select id="viable-default-base" name="<?= esc_attr($name('default_base')) ?>">
+                            <?php foreach (['Mapa' => 'Mapa (OpenStreetMap)', 'Satélite' => 'Satélite (Esri)', 'Mapbox' => 'Mapbox (estilo propio)'] as $value => $label): ?>
+                                <option value="<?= esc_attr($value) ?>" <?php selected($s['default_base'], $value); ?>><?= esc_html($label) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <p class="description">Si cada visitante elige otro fondo, se le recuerda su elección. Los proyectos con planos arrancan en Satélite.</p>
                     </td>
                 </tr>
                 <tr>

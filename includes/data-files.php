@@ -101,6 +101,38 @@ function viable_inspect_gpkg($path) {
     ];
 }
 
+/**
+ * Estado de un tramo (una fila del GeoPackage): 'done' | 'active' | 'pending' | null.
+ *   - Campo `surface` (georesistencia): construction → en ejecución; project/proposed/unpaved → pendiente;
+ *     cualquier otra calzada → ejecutado.
+ *   - Campo `estado` (viable.ar): Finalizado → ejecutado; En obras/Paralizado → en ejecución; otro → pendiente.
+ */
+function viable_feature_segment_status($row) {
+    $surface = strtolower(trim((string) ($row['surface'] ?? '')));
+    if ($surface !== '') {
+        if ($surface === 'construction') {
+            return 'active';
+        }
+        if (in_array($surface, ['project', 'proposed', 'unpaved'], true)) {
+            return 'pending';
+        }
+        return 'done';
+    }
+
+    $estado = strtolower(remove_accents(trim((string) ($row['estado'] ?? ''))));
+    if ($estado !== '') {
+        if ($estado === 'finalizado') {
+            return 'done';
+        }
+        if (in_array($estado, ['en obras', 'paralizado'], true)) {
+            return 'active';
+        }
+        return 'pending';
+    }
+
+    return null;
+}
+
 /** Códigos de proyectos publicados. */
 function viable_get_published_project_codes() {
     $ids = get_posts([

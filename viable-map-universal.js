@@ -47,6 +47,18 @@
   function drawFeatures(targetMap, features, colorMap) {
     const layers = [];
 
+    // Obras con tramos en distintos estados: se dibujan por tramo y se muestra la leyenda
+    const VML = window.ViableMapLayers;
+    const mixedCodes = (VML && VML.mixedSegmentCodes) ? VML.mixedSegmentCodes(features) : new Set();
+    if (targetMap._viableSegmentLegend) {
+      targetMap.removeControl(targetMap._viableSegmentLegend);
+      targetMap._viableSegmentLegend = null;
+    }
+    if (mixedCodes.size) {
+      const first = mixedCodes.values().next().value;
+      targetMap._viableSegmentLegend = VML.createSegmentLegend(colorMap[first] || '#3388ff', 'bottomright').addTo(targetMap);
+    }
+
     features.forEach(feature => {
       const color = colorMap[feature.properties.code] || '#3388ff';
       const tramo = feature.properties.tramo
@@ -91,6 +103,12 @@
       }
       if (feature.properties.parent_name && feature.properties.parent_url) {
         popupHtml += `<br><span class="popup-parent-link">Parte de <a href="${feature.properties.parent_url}">${feature.properties.parent_name}</a></span>`;
+      }
+      const bySegment = mixedCodes.has(feature.properties.code);
+      if (bySegment) {
+        layer.setStyle(VML.segmentStyle(feature.properties.segment, color));
+        const segmentText = VML.segmentLabel(feature.properties.segment);
+        if (segmentText) popupHtml += `<br>Tramo: ${segmentText}`;
       }
       layer.bindPopup(popupHtml);
 

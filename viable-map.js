@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function addMapLayers(targetMap) {
       if (window.ViableMapLayers) {
         // Con planos, arrancar en satélite (salvo que el visitante ya haya elegido otro fondo)
-        ViableMapLayers.setup(targetMap, { defaultBase: overlays.length ? 'Satélite' : 'Mapa' }).setOverlays(overlays);
+        ViableMapLayers.setup(targetMap, { defaultBase: overlays.length ? 'Satélite' : null }).setOverlays(overlays);
       } else {
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '\u00a9 OpenStreetMap contributors'
@@ -73,13 +73,23 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const layers = [];
 
+    // Obras con tramos en distintos estados (ejecutado / en ejecución / pendiente)
+    const hasSegments = !!(window.ViableMapLayers && ViableMapLayers.mixedSegmentCodes);
+    const mixedCodes = hasSegments ? ViableMapLayers.mixedSegmentCodes(geojsonData.features, projectCode) : new Set();
+    function addSegmentLegend(targetMap) {
+      if (mixedCodes.has(projectCode)) ViableMapLayers.createSegmentLegend(colors[0]).addTo(targetMap);
+    }
+
     function drawFeatures(targetMap) {
       const featureLayers = [];
       geojsonData.features.forEach((feature, index) => {
         const code = feature.properties && feature.properties.code ? feature.properties.code : projectCode;
         const isPrimary = code === projectCode;
-        const color = isPrimary ? colors[index % colors.length] : '#a6adb4';
+        const bySegment = isPrimary && mixedCodes.has(code);
+        const color = isPrimary ? (bySegment ? colors[0] : colors[index % colors.length]) : '#a6adb4';
         const tramo = feature.properties.tramo || `Tramo ${index + 1}`;
+        const segmentText = bySegment ? ViableMapLayers.segmentLabel(feature.properties.segment) : '';
+        const popup = `<strong>${tramo}</strong>` + (segmentText ? `<br>${segmentText}` : '');
 
         // Capa de contorno blanco (debajo)
         L.geoJSON(feature, {
@@ -101,7 +111,8 @@ document.addEventListener('DOMContentLoaded', () => {
             lineCap: 'round',
             lineJoin: 'round'
           }
-        }).bindPopup(`<strong>${tramo}</strong>`).addTo(targetMap);
+        }).bindPopup(popup).addTo(targetMap);
+        if (bySegment) layer.setStyle(ViableMapLayers.segmentStyle(feature.properties.segment, color));
 
         featureLayers.push(layer);
       });
@@ -110,6 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Dibujar en el mapa del infobox
     layers.push(...drawFeatures(map));
+    addSegmentLegend(map);
 
     // Ajustar el zoom para que quepan todos los features
     const group = L.featureGroup(layers);
@@ -151,6 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
       addMapLayers(bigMap);
 
       const bigLayers = drawFeatures(bigMap);
+      addSegmentLegend(bigMap);
       const bigGroup = L.featureGroup(bigLayers);
       bigMap.fitBounds(bigGroup.getBounds(), { padding: [30, 30], maxZoom: 18 });
 

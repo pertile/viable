@@ -34,6 +34,12 @@ function viable_register_map_layers_script() {
         file_exists(VIABLE_PATH . 'viable-map-layers.js') ? filemtime(VIABLE_PATH . 'viable-map-layers.js') : null,
         true
     );
+
+    wp_add_inline_script(
+        'viable-map-layers',
+        'window.ViableMapConfig = ' . wp_json_encode(viable_map_client_config()) . ';',
+        'before'
+    );
 }
 
 /**

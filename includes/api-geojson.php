@@ -125,7 +125,7 @@ function viable_get_filtered_geojson($request) {
             $features[] = [
                 'type' => 'Feature',
                 'geometry' => $geojson_geom,
-                'properties' => $properties
+                'properties' => $properties + ['segment' => viable_feature_segment_status($row)]
             ];
         }
         
@@ -604,6 +604,7 @@ function viable_get_map_projects($request) {
                     'state'             => get_field('state', $pid),
                     'type'              => $proj_type,
                     'tramo'             => $row['tramo'] ?? '',
+                    'segment'           => viable_feature_segment_status($row),
                     'last_post'         => $latest_post_info,
                     'parent_id'         => $parent_id,
                     'parent_name'       => $parent_id ? get_the_title($parent_id) : null,

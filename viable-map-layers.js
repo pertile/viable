@@ -32,9 +32,31 @@
   }
 
   /* ── Fondos ───────────────────────────────────────────────────── */
+  function getConfig() {
+    return window.ViableMapConfig || {};
+  }
+
+  /** Estilo de Mapbox Studio como teselas raster (Static Tiles API), sin mapbox-gl. */
+  function createMapboxLayer(mb) {
+    const url = 'https://api.mapbox.com/styles/v1/' + encodeURIComponent(mb.user) + '/' + encodeURIComponent(mb.style) +
+      '/tiles/512/{z}/{x}/{y}' + (L.Browser.retina ? '@2x' : '') + '?access_token=' + encodeURIComponent(mb.token);
+    return L.tileLayer(url, {
+      tileSize: 512,
+      zoomOffset: -1,
+      maxZoom: MAX_ZOOM,
+      attribution: '&copy; <a href="https://www.mapbox.com/about/maps/">Mapbox</a> ' +
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    });
+  }
+
   function createBaseLayers() {
     const common = { maxZoom: MAX_ZOOM, maxNativeZoom: 19 };
-    return {
+    const layers = {};
+    const mb = getConfig().mapbox;
+    if (mb && mb.token && mb.user && mb.style) {
+      layers[mb.label || 'Mapbox'] = createMapboxLayer(mb);
+    }
+    return Object.assign(layers, {
       'Mapa': L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', Object.assign({}, common, {
         attribution: '&copy; colaboradores de <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
       })),
@@ -44,7 +66,7 @@
         })),
         L.tileLayer(ESRI_LABELS, common)
       ])
-    };
+    });
   }
 
   /* ── Planos desde PMTiles ─────────────────────────────────────── */
@@ -159,7 +181,9 @@
 
     const bases = createBaseLayers();
     const pref = readPref();
-    const initial = bases[pref] ? pref : (options.defaultBase || 'Mapa');
+    // Orden: elección del visitante > pedido del mapa (p. ej. planos → Satélite) > ajuste del sitio > Mapa
+    const candidates = [pref, options.defaultBase, getConfig().defaultBase, 'Mapa'];
+    const initial = candidates.find(function (name) { return name && bases[name]; });
     bases[initial].addTo(map);
 
     const control = L.control.layers(bases, {}, { position: 'topleft', collapsed: true }).addTo(map);
@@ -221,6 +245,57 @@
     return { control: control, setOverlays: setOverlays };
   }
 
+  /* ── Estado de tramos (ejecutado / en ejecución / pendiente) ───── */
+  const SEGMENT_LABELS = { done: 'Ejecutado', active: 'En ejecución', pending: 'Pendiente' };
+  const SEGMENT_ACTIVE_COLOR = '#ff6d00';
+  const SEGMENT_PENDING_COLOR = '#7f8c8d';
+
+  /**
+   * Códigos de obra cuyos tramos están en estados distintos. Solo esas obras se
+   * dibujan por tramo; si todo está en el mismo estado, el mapa se ve como siempre.
+   */
+  function mixedSegmentCodes(features, fallbackCode) {
+    const byCode = {};
+    (features || []).forEach(function (f) {
+      const p = f.properties || {};
+      if (!p.segment) return;
+      const code = p.code || fallbackCode || '';
+      (byCode[code] = byCode[code] || new Set()).add(p.segment);
+    });
+    return new Set(Object.keys(byCode).filter(function (c) { return byCode[c].size > 1; }));
+  }
+
+  /** Estilo de la línea de un tramo (se mezcla sobre el estilo normal). */
+  function segmentStyle(status, baseColor) {
+    if (status === 'active') return { color: SEGMENT_ACTIVE_COLOR, weight: 6, opacity: 1, dashArray: null };
+    if (status === 'pending') return { color: SEGMENT_PENDING_COLOR, weight: 3, opacity: 0.85, dashArray: '4 8' };
+    return { color: baseColor };
+  }
+
+  function segmentLabel(status) {
+    return SEGMENT_LABELS[status] || '';
+  }
+
+  /** Leyenda de estados de tramo. */
+  function createSegmentLegend(baseColor, position) {
+    const ctrl = L.control({ position: position || 'bottomleft' });
+    ctrl.onAdd = function () {
+      const div = L.DomUtil.create('div', 'viable-segment-legend');
+      [['done', baseColor, ''], ['active', SEGMENT_ACTIVE_COLOR, ''], ['pending', SEGMENT_PENDING_COLOR, '4 4']].forEach(function (item) {
+        const row = document.createElement('div');
+        row.className = 'viable-segment-legend-row';
+        row.innerHTML = '<svg width="26" height="10" aria-hidden="true"><line x1="1" y1="5" x2="25" y2="5" stroke="' + item[1] +
+          '" stroke-width="' + (item[0] === 'active' ? 5 : 3) + '" stroke-dasharray="' + item[2] + '" stroke-linecap="round"/></svg>';
+        const text = document.createElement('span');
+        text.textContent = SEGMENT_LABELS[item[0]];
+        row.appendChild(text);
+        div.appendChild(row);
+      });
+      return div;
+    };
+    return ctrl;
+  }
+
   /** Lee el atributo data-overlays (JSON) de un contenedor */
   function parseOverlays(el) {
     try {
@@ -231,5 +306,13 @@
     }
   }
 
-  window.ViableMapLayers = { setup: setup, parseOverlays: parseOverlays, MAX_ZOOM: MAX_ZOOM };
+  window.ViableMapLayers = {
+    setup: setup,
+    parseOverlays: parseOverlays,
+    mixedSegmentCodes: mixedSegmentCodes,
+    segmentStyle: segmentStyle,
+    segmentLabel: segmentLabel,
+    createSegmentLegend: createSegmentLegend,
+    MAX_ZOOM: MAX_ZOOM
+  };
 })();
