@@ -5,7 +5,9 @@ $sibling_project_ids = is_array($sibling_project_ids ?? null) ? $sibling_project
 $timeline = is_array($timeline ?? null) ? $timeline : null;
 $timeline_markers = ($timeline && !empty($timeline['markers'])) ? $timeline['markers'] : [];
 
-$states = ['proyecto', 'en licitación', 'adjudicado', 'en obras', 'finalizado'];
+$states = viable_get_state_sequence();
+$funding = isset($d['funding']) ? (string) $d['funding'] : '';
+$surface = isset($d['surface']) ? (string) $d['surface'] : '';
 $normalized_state = $state_lower === 'paralizado' ? 'en obras' : $state_lower;
 $current_index = array_search($normalized_state, $states, true);
 if ($current_index === false) {
@@ -33,7 +35,7 @@ $state_dates = [
     <?php endif; ?>
 
     <?php if ($length): ?>
-        <p class="project-length">Longitud: <strong><?= esc_html($length) ?> km</strong></p>
+        <p class="project-length">Longitud: <strong><?= esc_html(viable_format_length($length)) ?></strong></p>
     <?php endif; ?>
 
     <div class="project-info-box">
@@ -46,15 +48,29 @@ $state_dates = [
 
         <?php if ($roads_text): ?>
             <div class="info-item">
-                <span class="info-label">Rutas</span>
+                <span class="info-label"><?= esc_html(viable_setting('roads_label')) ?></span>
                 <span class="info-value"><?= esc_html($roads_text) ?></span>
             </div>
         <?php endif; ?>
 
         <?php if ($regions_text): ?>
             <div class="info-item">
-                <span class="info-label">Regiones</span>
+                <span class="info-label"><?= esc_html(viable_setting('regions_label')) ?></span>
                 <span class="info-value"><?= esc_html($regions_text) ?></span>
+            </div>
+        <?php endif; ?>
+
+        <?php if ($funding !== ''): ?>
+            <div class="info-item">
+                <span class="info-label">Financiamiento</span>
+                <span class="info-value"><?= esc_html($funding) ?></span>
+            </div>
+        <?php endif; ?>
+
+        <?php if ($surface !== ''): ?>
+            <div class="info-item">
+                <span class="info-label">Calzada</span>
+                <span class="info-value"><?= esc_html($surface) ?></span>
             </div>
         <?php endif; ?>
 
@@ -181,7 +197,7 @@ $state_dates = [
             </div>
         <?php endif; ?>
 
-        <?php if ($tender_documents): ?>
+        <?php if ($tender_documents && viable_uses_tender()): ?>
             <div class="tender-documents-box">
                 <h4>Pliegos de licitación</h4>
                 <?= wpautop($tender_documents) ?>

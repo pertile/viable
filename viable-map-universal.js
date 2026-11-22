@@ -536,7 +536,8 @@
     function apply() { onApply({ ...current }); }
 
     if (options.categories && options.categories.length) {
-      panel.appendChild(makeMultiSelect('Región', 'category', options.categories,
+      const regionLabel = (options.labels && options.labels.category) || 'Región';
+      panel.appendChild(makeMultiSelect(regionLabel, 'category', options.categories,
         c => c.id, c => c.name, v => { current.category = v; apply(); }));
     }
     if (options.types && options.types.length) {

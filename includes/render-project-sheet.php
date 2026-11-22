@@ -368,6 +368,8 @@ function viable_get_project_data($pid) {
         'type_display'        => $type_display,
         'short_desc'          => get_field('short_description', $pid),
         'length'              => get_field('length', $pid),
+        'funding'             => get_field('funding', $pid),
+        'surface'             => get_field('surface', $pid),
         'state'               => $state,
         'state_lower'         => $state_lower,
         'progress'            => get_field('progress', $pid),
@@ -609,7 +611,7 @@ function viable_render_project_sheet($content) {
                         <span class="project-type-tag"><?= esc_html($d['type_display']) ?></span>
                     <?php endif; ?>
                     <?php if ($d['length']): ?>
-                        <span class="project-length-tag"><?= esc_html($d['length']) ?> km</span>
+                        <span class="project-length-tag"><?= esc_html(viable_format_length($d['length'])) ?></span>
                     <?php endif; ?>
                     <?php if ($d['state']): ?>
                         <span class="project-state-tag state-tag-<?= esc_attr(sanitize_title($d['state'])) ?>"><?= esc_html($d['state']) ?></span>

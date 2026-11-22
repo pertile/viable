@@ -156,16 +156,12 @@ function viable_map_shortcode($atts) {
     $filter_data = [];
     if (!empty($enabled_filters)) {
         if (in_array('type', $enabled_filters)) {
-            $filter_data['types'] = [
-                'Pavimentación', 'Apertura', 'Duplicación', 'Calzada adicional',
-                'Ampliación de calzada', 'Puente', 'Rotonda', 'Túnel'
-            ];
+            $filter_data['types'] = viable_get_project_types();
         }
         if (in_array('state', $enabled_filters)) {
-            $filter_data['states'] = [
-                'Proyecto', 'En licitación', 'Adjudicado', 'En obras', 'Paralizado', 'Finalizado'
-            ];
+            $filter_data['states'] = array_values(array_diff(viable_get_states(), ['Cancelado']));
         }
+        $filter_data['labels'] = ['category' => viable_setting('regions_label')];
         if (in_array('category', $enabled_filters)) {
             $categories = viable_get_region_categories_hierarchy();
             $filter_data['categories'] = array_map(function($item) {
