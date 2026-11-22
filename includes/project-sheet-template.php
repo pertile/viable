@@ -8,6 +8,7 @@ $timeline_markers = ($timeline && !empty($timeline['markers'])) ? $timeline['mar
 $states = viable_get_state_sequence();
 $funding = isset($d['funding']) ? (string) $d['funding'] : '';
 $surface = isset($d['surface']) ? (string) $d['surface'] : '';
+$is_road = !empty($d['is_road']); // "Obra en ruta": mapa sin rotación
 $normalized_state = $state_lower === 'paralizado' ? 'en obras' : $state_lower;
 $current_index = array_search($normalized_state, $states, true);
 if ($current_index === false) {
@@ -206,7 +207,7 @@ $state_dates = [
     <?php endif; ?>
 
     <?php if ($is_parent_project && !empty($map_codes)): ?>
-        <?= do_shortcode('[viable_map codes="' . esc_attr(implode(',', $map_codes)) . '" height="300px"]') ?>
+        <?= do_shortcode('[viable_map codes="' . esc_attr(implode(',', $map_codes)) . '" height="300px"' . ($is_road ? ' bearing="0"' : '') . ']') ?>
     <?php elseif ($code): ?>
         <div class="viable-map-single"
              data-code="<?= esc_attr($code) ?>"
@@ -214,6 +215,7 @@ $state_dates = [
              data-rest-url="<?= esc_url(rest_url('viable/v1/geojson')) ?>"
              <?php $viable_overlay = viable_get_project_overlay($pid); ?>
              data-overlays="<?= esc_attr(wp_json_encode($viable_overlay ? [$viable_overlay] : [])) ?>"
+             <?php if ($is_road): ?>data-bearing="0"<?php endif; ?>
              style="height: 300px; width: 100%;">
         </div>
     <?php elseif ($map): ?>

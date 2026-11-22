@@ -30,6 +30,35 @@ add_action('acf/include_fields', function () {
     }
 }, 20);
 
+/** En las obras: "Obra en ruta" (mapa sin rotación y fuera del export / Pavimentómetro). */
+add_action('acf/include_fields', function () {
+    if (!function_exists('acf_add_local_field')) {
+        return;
+    }
+    acf_add_local_field([
+        'key'           => 'field_viable_road_project',
+        'label'         => 'Obra en ruta',
+        'name'          => 'road_project',
+        'type'          => 'true_false',
+        'parent'        => 'group_697e05025e85d',
+        'instructions'  => 'Para obras fuera de la trama urbana: el mapa se muestra con el norte arriba (sin la rotación del sitio) y la obra no se incluye en el export GeoJSON (Pavimentómetro).',
+        'ui'            => 1,
+        'ui_on_text'    => 'Sí',
+        'ui_off_text'   => 'No',
+        'default_value' => 0,
+    ]);
+}, 20);
+
+// Solo tiene sentido en sitios con rotación de mapas
+add_filter('acf/prepare_field/key=field_viable_road_project', function ($field) {
+    return (function_exists('viable_get_map_bearing') && viable_get_map_bearing() != 0) || !empty($field['value']) ? $field : false;
+});
+
+/** ¿La obra está marcada como "Obra en ruta"? */
+function viable_is_road_project($pid) {
+    return function_exists('get_field') && (bool) get_field('road_project', $pid, false);
+}
+
 /** En las notas: obras que se dibujan como referencia (en gris) en el mapa de la ficha. */
 add_action('acf/include_fields', function () {
     if (!function_exists('acf_add_local_field')) {

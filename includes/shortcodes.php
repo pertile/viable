@@ -111,6 +111,7 @@ add_shortcode('viable_map', 'viable_map_shortcode');
  *   [viable_map legend="false"]                 → sin leyenda
  *   [viable_map height="600px"]                 → altura personalizada
  *   [viable_map expand="false"]                 → sin botón ampliar
+ *   [viable_map bearing="0"]                    → sin la rotación del sitio (norte arriba)
  *
  * Atributos combinables: [viable_map category="5" state="En obras" legend="true" filters="true"]
  */
@@ -125,6 +126,7 @@ function viable_map_shortcode($atts) {
         'height'   => '500px',
         'expand'   => 'true',
         'list'     => 'false',
+        'bearing'  => '', // rotación de este mapa; vacío = la del sitio, "0" = norte arriba
     ], $atts, 'viable_map');
 
     // Normalizar 'true' al conjunto completo de filtros
@@ -196,6 +198,7 @@ function viable_map_shortcode($atts) {
          data-filters="<?= esc_attr($filters_val) ?>"
          data-expand="<?= esc_attr($atts['expand']) ?>"
          data-list="<?= esc_attr($atts['list']) ?>"
+         <?php if (is_numeric($atts['bearing'])): ?>data-bearing="<?= esc_attr((string) (float) $atts['bearing']) ?>"<?php endif; ?>
          <?php if (!empty($filter_data)): ?>
          data-filter-options="<?= esc_attr(wp_json_encode($filter_data)) ?>"
          <?php endif; ?>

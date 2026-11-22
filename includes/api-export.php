@@ -11,7 +11,8 @@
  * Financista, short_description, link_finished, link_progress, surface.
  *
  * Reglas:
- *   - Una feature por geometría del GeoPackage cuyo código tenga ficha publicada.
+ *   - Una feature por geometría del GeoPackage cuyo código tenga ficha publicada
+ *     y no esté marcada como "Obra en ruta".
  *   - length (metros): la longitud de la ficha va en la primera geometría de cada
  *     obra y 0 en las demás, para que sumar por obra dé el total. Si la ficha no
  *     tiene longitud, cada geometría lleva su largo calculado sobre el trazado.
@@ -60,6 +61,9 @@ function viable_build_export_geojson() {
     // Fichas publicadas por código
     $projects = [];
     foreach (get_posts(['post_type' => 'project', 'post_status' => 'publish', 'posts_per_page' => -1, 'fields' => 'ids']) as $pid) {
+        if (viable_is_road_project($pid)) {
+            continue; // "Obra en ruta": no va al export (Pavimentómetro)
+        }
         $code = trim((string) get_field('code', $pid, false));
         if ($code !== '') {
             $projects[$code] = (int) $pid;

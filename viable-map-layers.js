@@ -296,6 +296,23 @@
     return ctrl;
   }
 
+  /**
+   * Opciones para L.map(): rotación configurada en el sitio (si leaflet-rotate está cargado).
+   * El ajuste usa la convención de Mapbox (45 = noreste arriba); leaflet-rotate gira al revés.
+   */
+  function mapOptions(override) {
+    // override: rotación de este mapa (data-bearing del contenedor); vacío = la del sitio
+    const own = (override !== undefined && override !== null && override !== '') ? Number(override) : NaN;
+    const bearing = (isNaN(own) ? Number(getConfig().bearing) : own) || 0;
+    if (!bearing || !L.Map.prototype.setBearing) return {};
+    return {
+      rotate: true,
+      bearing: (360 - (bearing % 360)) % 360,
+      touchRotate: false,
+      rotateControl: { closeOnZeroBearing: false }
+    };
+  }
+
   /** Lee el atributo data-overlays (JSON) de un contenedor */
   function parseOverlays(el) {
     try {
@@ -308,6 +325,7 @@
 
   window.ViableMapLayers = {
     setup: setup,
+    mapOptions: mapOptions,
     parseOverlays: parseOverlays,
     mixedSegmentCodes: mixedSegmentCodes,
     segmentStyle: segmentStyle,

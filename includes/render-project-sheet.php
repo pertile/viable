@@ -369,6 +369,7 @@ function viable_get_project_data($pid) {
         'short_desc'          => get_field('short_description', $pid),
         'length'              => get_field('length', $pid),
         'funding'             => get_field('funding', $pid),
+        'is_road'             => viable_is_road_project($pid),
         'surface'             => get_field('surface', $pid),
         'state'               => $state,
         'state_lower'         => $state_lower,
@@ -532,7 +533,11 @@ function viable_render_project_sheet($content) {
 
     // Mapa con todos los proyectos (usa el shortcode universal)
     if (!empty($codes)) {
-        echo do_shortcode('[viable_map codes="' . esc_attr(implode(',', $codes)) . '" height="400px"]');
+        // Si todas las obras de la nota están "en ruta", el mapa va sin rotación
+        $all_road = !array_filter($project_data, function ($pd) {
+            return empty($pd['is_road']);
+        });
+        echo do_shortcode('[viable_map codes="' . esc_attr(implode(',', $codes)) . '" height="400px"' . ($all_road ? ' bearing="0"' : '') . ']');
     }
 
     // Contenido del post

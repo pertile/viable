@@ -23,6 +23,7 @@ function viable_settings_defaults() {
         'mapbox_style'    => '', // mapbox://styles/usuario/estilo
         'mapbox_label'    => 'Mapbox',
         'default_base'    => 'Mapa', // Mapa | Satélite | Mapbox
+        'map_bearing'     => 0, // rotación de los mapas en grados, como "bearing" de Mapbox
     ];
 }
 
@@ -119,7 +120,13 @@ function viable_map_client_config() {
     if ($default === 'Mapbox') {
         $default = $mapbox ? $mapbox['label'] : 'Mapa';
     }
-    return ['mapbox' => $mapbox, 'defaultBase' => $default];
+    return ['mapbox' => $mapbox, 'defaultBase' => $default, 'bearing' => viable_get_map_bearing()];
+}
+
+/** Rotación de los mapas en grados (convención de Mapbox: 45 = el noreste queda arriba). */
+function viable_get_map_bearing() {
+    $b = viable_setting('map_bearing');
+    return is_numeric($b) ? (float) $b : 0.0;
 }
 
 /* ====================================================================
@@ -162,8 +169,12 @@ function viable_sanitize_settings($input) {
 
     $out['mapbox_token'] = isset($input['mapbox_token']) ? preg_replace('/[^A-Za-z0-9._-]/', '', $input['mapbox_token']) : $out['mapbox_token'];
     $out['mapbox_style'] = isset($input['mapbox_style']) ? sanitize_text_field($input['mapbox_style']) : $out['mapbox_style'];
-    if ($out['mapbox_style'] !== '' && !viable_parse_mapbox_style($out['mapbox_style'])) {
+    $parsed_style = $out['mapbox_style'] !== '' ? viable_parse_mapbox_style($out['mapbox_style']) : null;
+    if ($out['mapbox_style'] !== '' && !$parsed_style) {
         add_settings_error('viable_settings', 'viable_mapbox_style', 'El estilo de Mapbox no tiene el formato esperado (mapbox://styles/usuario/estilo).');
+    } elseif ($parsed_style && $parsed_style['user'] !== 'mapbox' && preg_match('/[A-Z]/', $parsed_style['id'])) {
+        // Los ID de estilos propios son minúsculas y números (p. ej. cmabc123…); con mayúsculas suele ser el nombre
+        add_settings_error('viable_settings', 'viable_mapbox_style_name', '"' . $parsed_style['id'] . '" parece el nombre del estilo, no su ID. Copiá la "Style URL" desde Mapbox Studio (Share), que tiene la forma mapbox://styles/usuario/cm…');
     }
     if ($out['mapbox_token'] !== '' && strpos($out['mapbox_token'], 'pk.') !== 0) {
         add_settings_error('viable_settings', 'viable_mapbox_token', 'El token de Mapbox tiene que ser público (empieza con "pk."). Los tokens secretos ("sk.") no deben usarse en una página web.');
@@ -174,6 +185,8 @@ function viable_sanitize_settings($input) {
         $out['mapbox_label'] = $label !== '' ? $label : 'Mapbox';
     }
     $out['default_base'] = in_array($input['default_base'] ?? '', ['Mapa', 'Satélite', 'Mapbox'], true) ? $input['default_base'] : 'Mapa';
+    $bearing = isset($input['map_bearing']) && is_numeric($input['map_bearing']) ? (float) $input['map_bearing'] : 0;
+    $out['map_bearing'] = fmod(fmod($bearing, 360) + 360, 360);
     $out['length_unit'] = (isset($input['length_unit']) && $input['length_unit'] === 'm') ? 'm' : 'km';
 
     if (empty(viable_lines_to_list($out['project_types']))) {
@@ -299,6 +312,13 @@ function viable_render_settings_page() {
                             <?php endforeach; ?>
                         </select>
                         <p class="description">Si cada visitante elige otro fondo, se le recuerda su elección. Los proyectos con planos arrancan en Satélite.</p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="viable-bearing">Rotación de los mapas</label></th>
+                    <td>
+                        <input id="viable-bearing" type="number" min="-180" max="360" step="1" class="small-text" name="<?= esc_attr($name('map_bearing')) ?>" value="<?= esc_attr((string) $s['map_bearing']) ?>"> grados
+                        <p class="description">0 = norte arriba. Igual que el "bearing" de Mapbox: con 45, el noreste queda arriba (la cuadrícula de Resistencia se ve derecha). Los visitantes pueden volver al norte con la brújula del mapa.</p>
                     </td>
                 </tr>
                 <tr>

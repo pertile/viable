@@ -272,11 +272,11 @@
 
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      openModal(features, colorMap, filterOptions, baseParams, restUrl, overlays);
+      openModal(features, colorMap, filterOptions, baseParams, restUrl, overlays, container.dataset.bearing);
     });
   }
 
-  function openModal(features, colorMap, filterOptions, baseParams, restUrl, overlays) {
+  function openModal(features, colorMap, filterOptions, baseParams, restUrl, overlays, bearing) {
     const overlay = document.createElement('div');
     overlay.className = 'viable-map-modal-overlay';
 
@@ -296,7 +296,7 @@
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
 
-    const bigMap = L.map(mapDiv).setView([-34.6, -58.4], 6);
+    const bigMap = L.map(mapDiv, window.ViableMapLayers ? ViableMapLayers.mapOptions(bearing) : {}).setView([-34.6, -58.4], 6);
     const bigMapLayers = addMapLayers(bigMap);
     bigMapLayers.setOverlays(overlays || []);
 
@@ -603,7 +603,7 @@
     }
 
     // Crear mapa Leaflet
-    const map = L.map(el).setView([-34.6, -58.4], 6);
+    const map = L.map(el, window.ViableMapLayers ? ViableMapLayers.mapOptions(el.dataset.bearing) : {}).setView([-34.6, -58.4], 6);
     const mapLayers = addMapLayers(map);
 
     // Estado mutable

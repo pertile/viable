@@ -27,10 +27,17 @@ function viable_register_map_layers_script() {
         true
     );
 
+    // Rotación (leaflet-rotate): solo en sitios con rotación configurada, porque modifica partes de Leaflet
+    $deps = ['leaflet', 'pmtiles'];
+    if (function_exists('viable_get_map_bearing') && viable_get_map_bearing() != 0) {
+        wp_register_script('leaflet-rotate', 'https://unpkg.com/leaflet-rotate@0.2.8/dist/leaflet-rotate.js', ['leaflet'], null, true);
+        $deps[] = 'leaflet-rotate';
+    }
+
     wp_register_script(
         'viable-map-layers',
         VIABLE_URL . 'viable-map-layers.js',
-        ['leaflet', 'pmtiles'],
+        $deps,
         file_exists(VIABLE_PATH . 'viable-map-layers.js') ? filemtime(VIABLE_PATH . 'viable-map-layers.js') : null,
         true
     );
