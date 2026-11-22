@@ -429,6 +429,13 @@ function viable_render_project_sheet($content) {
     if ($project_count === 1) {
         $d = viable_get_project_data($projects[0]->ID);
 
+        // Obras de referencia de la nota: se suman al mapa de la ficha (en gris)
+        $context_codes = function_exists('viable_get_post_context_codes') ? viable_get_post_context_codes(get_the_ID()) : [];
+        if ($context_codes && !$d['is_parent_project']) {
+            $own = $d['code'] ? [$d['code']] : [];
+            $d['map_codes'] = array_values(array_unique(array_merge($own, $d['map_codes'], $context_codes)));
+        }
+
         // Extraer variables para el template
         $pid          = $d['pid'];
         $name         = $d['name'];

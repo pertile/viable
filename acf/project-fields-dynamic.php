@@ -30,6 +30,39 @@ add_action('acf/include_fields', function () {
     }
 }, 20);
 
+/** En las notas: obras que se dibujan como referencia (en gris) en el mapa de la ficha. */
+add_action('acf/include_fields', function () {
+    if (!function_exists('acf_add_local_field')) {
+        return;
+    }
+    acf_add_local_field([
+        'key'           => 'field_viable_context_projects',
+        'label'         => 'Obras de referencia en el mapa',
+        'name'          => 'context_projects',
+        'type'          => 'post_object',
+        'parent'        => 'group_697e0e6630e10',
+        'instructions'  => 'Opcional. Se dibujan en gris en el mapa, como contexto (por ejemplo, la obra anterior en la misma calle). No muestran su ficha.',
+        'post_type'     => ['project'],
+        'return_format' => 'id',
+        'multiple'      => 1,
+        'allow_null'    => 1,
+        'ui'            => 1,
+    ]);
+}, 20);
+
+/** Códigos de las obras de referencia de una nota. */
+function viable_get_post_context_codes($post_id) {
+    $ids = function_exists('get_field') ? get_field('context_projects', $post_id, false) : [];
+    $codes = [];
+    foreach ((array) $ids as $id) {
+        $code = $id ? trim((string) get_field('code', (int) $id, false)) : '';
+        if ($code !== '') {
+            $codes[] = $code;
+        }
+    }
+    return $codes;
+}
+
 /** Ubicar Financiamiento y Calzada después de Longitud en el formulario. */
 add_filter('acf/load_fields', function ($fields, $parent) {
     if (($parent['key'] ?? '') !== 'group_697e05025e85d') {
