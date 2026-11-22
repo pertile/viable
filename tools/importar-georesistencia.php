@@ -124,7 +124,12 @@ $stats = ['estado' => [], 'tipo' => [], 'financiamiento' => [], 'calzada' => [],
 foreach ($obras as $code => $rows) {
     $r = $rows[0];
 
-    $title = $val($r, 'title') ?: ($val($r, 'Obra') ?: $code);
+    if (!$val($r, 'title') && !$val($r, 'Obra')) {
+        $problems[] = "$code: sin título ni nombre de obra; se omite (conviene borrar la fila en QGIS)";
+        continue;
+    }
+
+    $title = $val($r, 'title') ?: $val($r, 'Obra');
 
     $type_raw = $val($r, 'TipoObra');
     $type = $type_raw ? ($TYPE_MAP[mb_strtolower($type_raw)] ?? $type_raw) : 'Pavimento';
