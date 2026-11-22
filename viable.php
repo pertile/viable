@@ -27,6 +27,7 @@ require_once VIABLE_PATH . 'includes/project-event-sync.php';
 require_once VIABLE_PATH . 'includes/data-files.php';
 require_once VIABLE_PATH . 'includes/overlay-tiles.php';
 require_once VIABLE_PATH . 'includes/api-geojson.php';
+require_once VIABLE_PATH . 'includes/api-export.php';
 require_once VIABLE_PATH . 'includes/api-events.php';
 require_once VIABLE_PATH . 'includes/api-dashboard.php';
 require_once VIABLE_PATH . 'includes/category-map.php';

@@ -102,6 +102,60 @@ function viable_inspect_gpkg($path) {
 }
 
 /**
+ * Todas las filas del GeoPackage, con la geometría ya convertida a GeoJSON en 'geometry'.
+ *
+ * @return array
+ */
+function viable_read_gpkg_rows() {
+    $path = viable_get_gpkg_path();
+    if (!class_exists('SQLite3') || !file_exists($path)) {
+        return [];
+    }
+
+    $rows = [];
+    try {
+        $db = new SQLite3($path, SQLITE3_OPEN_READONLY);
+        $table = $db->querySingle("SELECT table_name FROM gpkg_contents WHERE data_type = 'features' LIMIT 1");
+        if ($table) {
+            $res = $db->query('SELECT * FROM "' . str_replace('"', '""', $table) . '"');
+            while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
+                $blob = $row['geom'] ?? $row['geometry'] ?? null;
+                unset($row['geom'], $row['geometry']);
+                $row['geometry'] = $blob ? viable_wkb_to_geojson($blob) : null;
+                $rows[] = $row;
+            }
+        }
+        $db->close();
+    } catch (Exception $e) {
+        error_log('Viable: no se pudo leer el GeoPackage: ' . $e->getMessage());
+        return [];
+    }
+    return $rows;
+}
+
+/** Longitud en metros de una geometría GeoJSON (LineString / MultiLineString). */
+function viable_geometry_length_m($geometry) {
+    if (!is_array($geometry) || empty($geometry['coordinates'])) {
+        return 0.0;
+    }
+    $lines = $geometry['type'] === 'MultiLineString' ? $geometry['coordinates']
+        : ($geometry['type'] === 'LineString' ? [$geometry['coordinates']] : []);
+
+    $total = 0.0;
+    foreach ($lines as $line) {
+        for ($i = 1, $n = count($line); $i < $n; $i++) {
+            list($lon1, $lat1) = $line[$i - 1];
+            list($lon2, $lat2) = $line[$i];
+            $dlat = deg2rad($lat2 - $lat1);
+            $dlon = deg2rad($lon2 - $lon1);
+            $a = sin($dlat / 2) ** 2 + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dlon / 2) ** 2;
+            $total += 2 * 6371008.8 * asin(min(1, sqrt($a)));
+        }
+    }
+    return $total;
+}
+
+/**
  * Estado de un tramo (una fila del GeoPackage): 'done' | 'active' | 'pending' | null.
  *   - Campo `surface` (georesistencia): construction → en ejecución; project/proposed/unpaved → pendiente;
  *     cualquier otra calzada → ejecutado.

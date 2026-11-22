@@ -173,8 +173,15 @@ foreach ($obras as $code => $rows) {
         $problems[] = "$code: municipio \"$muni\" no coincide con ninguna categoría de región";
     }
 
-    $length = $val($r, 'length');
-    $length = is_numeric($length) ? (string) round((float) $length) : '';
+    // Longitud total de la obra: suma de sus geometrías
+    $length_sum = null;
+    foreach ($rows as $row) {
+        $l = str_replace(',', '.', (string) $val($row, 'length'));
+        if (is_numeric($l)) {
+            $length_sum = ($length_sum ?? 0) + (float) $l;
+        }
+    }
+    $length = $length_sum !== null ? (string) round($length_sum) : '';
 
     $links = [];
     foreach ($rows as $row) {
