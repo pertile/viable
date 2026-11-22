@@ -21,6 +21,23 @@ file="${2:-$here/../assets/data/viable.gpkg}"
 
 remote_dir="domains/$site/public_html/wp-content/uploads/viable"
 
+# Si QGIS dejó cambios en el "-wal" (modo WAL), subir solo el .gpkg los perdería:
+# se sube una copia consolidada (un único archivo con todo). No modifica el original.
+if [ -f "$file-wal" ]; then
+  tmpdir="$(mktemp -d)"
+  trap 'rm -rf "$tmpdir"' EXIT
+  python -c "
+import sqlite3, sys
+src = sqlite3.connect('file:' + sys.argv[1] + '?mode=ro', uri=True)
+dst = sqlite3.connect(sys.argv[2])
+src.backup(dst)
+dst.execute('PRAGMA journal_mode=DELETE')
+dst.close(); src.close()
+" "$file" "$tmpdir/viable.gpkg" || { echo "No se pudo consolidar el GeoPackage (¿está Python instalado?)" >&2; exit 1; }
+  file="$tmpdir/viable.gpkg"
+  echo "GeoPackage en modo WAL: se sube una copia consolidada"
+fi
+
 ssh "$SSH_HOST" "mkdir -p '$remote_dir'"
 scp -q "$file" "$SSH_HOST:$remote_dir/viable.gpkg.subiendo"
 ssh "$SSH_HOST" "mv -f '$remote_dir/viable.gpkg.subiendo' '$remote_dir/viable.gpkg' && ls -l '$remote_dir/viable.gpkg'"

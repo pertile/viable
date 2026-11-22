@@ -245,8 +245,8 @@
   }
 
   /** Fondos (Mapa / Satélite) y planos. Devuelve { setOverlays } */
-  function addMapLayers(targetMap) {
-    if (window.ViableMapLayers) return ViableMapLayers.setup(targetMap);
+  function addMapLayers(targetMap, base) {
+    if (window.ViableMapLayers) return ViableMapLayers.setup(targetMap, { defaultBase: base || null });
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '\u00a9 OpenStreetMap contributors'
     }).addTo(targetMap);
@@ -272,11 +272,11 @@
 
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      openModal(features, colorMap, filterOptions, baseParams, restUrl, overlays, container.dataset.bearing);
+      openModal(features, colorMap, filterOptions, baseParams, restUrl, overlays, container.dataset.bearing, container.dataset.base);
     });
   }
 
-  function openModal(features, colorMap, filterOptions, baseParams, restUrl, overlays, bearing) {
+  function openModal(features, colorMap, filterOptions, baseParams, restUrl, overlays, bearing, base) {
     const overlay = document.createElement('div');
     overlay.className = 'viable-map-modal-overlay';
 
@@ -297,7 +297,7 @@
     document.body.appendChild(overlay);
 
     const bigMap = L.map(mapDiv, window.ViableMapLayers ? ViableMapLayers.mapOptions(bearing) : {}).setView([-34.6, -58.4], 6);
-    const bigMapLayers = addMapLayers(bigMap);
+    const bigMapLayers = addMapLayers(bigMap, base);
     bigMapLayers.setOverlays(overlays || []);
 
     let modalFeatures = features;
@@ -604,7 +604,7 @@
 
     // Crear mapa Leaflet
     const map = L.map(el, window.ViableMapLayers ? ViableMapLayers.mapOptions(el.dataset.bearing) : {}).setView([-34.6, -58.4], 6);
-    const mapLayers = addMapLayers(map);
+    const mapLayers = addMapLayers(map, el.dataset.base);
 
     // Estado mutable
     let currentLayers = [];

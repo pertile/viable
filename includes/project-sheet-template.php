@@ -207,7 +207,13 @@ $state_dates = [
     <?php endif; ?>
 
     <?php if ($is_parent_project && !empty($map_codes)): ?>
-        <?= do_shortcode('[viable_map codes="' . esc_attr(implode(',', $map_codes)) . '" height="300px"' . ($is_road ? ' bearing="0"' : '') . ']') ?>
+        <?php
+        // Si algún tramo tiene planos, el mapa de la ficha principal arranca en Satélite (como el de cada tramo)
+        $children_have_planos = (bool) array_filter($children_projects, function ($child) {
+            return !empty($child['id']) && viable_get_project_overlay((int) $child['id']);
+        });
+        ?>
+        <?= do_shortcode('[viable_map codes="' . esc_attr(implode(',', $map_codes)) . '" height="300px"' . ($is_road ? ' bearing="0"' : '') . ($children_have_planos ? ' base="Satélite"' : '') . ']') ?>
     <?php elseif ($code): ?>
         <div class="viable-map-single"
              data-code="<?= esc_attr($code) ?>"
