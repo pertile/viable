@@ -1362,3 +1362,31 @@ a.viable-ver-mas-btn:hover {
   align-items: center;
   gap: 6px;
 }
+
+/*
+ * Bloques anchos del artículo (videos, imágenes, galerías) junto a la ficha flotante:
+ * sin esto ocupan todo el ancho y quedan por debajo/encima de la ficha.
+ * Con display: flow-root se achican para quedar al lado, igual que el texto.
+ * Los embeds de WordPress conservan la proporción (el alto se calcula sobre el ancho).
+ */
+.viable-post-content-wrapper .wp-block-embed,
+.viable-post-content-wrapper .wp-block-video,
+.viable-post-content-wrapper .wp-block-image,
+.viable-post-content-wrapper .wp-block-gallery,
+.viable-post-content-wrapper .wp-block-cover,
+.viable-post-content-wrapper .wp-block-media-text,
+.viable-post-content-wrapper .wp-video,
+.viable-post-content-wrapper > figure {
+  display: flow-root;
+}
+
+/* Si queda muy poco lugar al lado de la ficha (pantallas medianas), el bloque va debajo */
+@media (min-width: 769px) and (max-width: 1100px) {
+  .viable-post-content-wrapper .wp-block-embed,
+  .viable-post-content-wrapper .wp-block-video,
+  .viable-post-content-wrapper .wp-block-gallery,
+  .viable-post-content-wrapper .wp-block-cover,
+  .viable-post-content-wrapper .wp-block-media-text {
+    clear: right;
+  }
+}
