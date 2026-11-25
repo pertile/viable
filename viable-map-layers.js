@@ -15,7 +15,7 @@
 (function () {
   'use strict';
 
-  const MAX_ZOOM = 20;
+  const MAX_ZOOM = 21;
   const PREF_KEY = 'viable-map-base';
   const PLANOS_PANE = 'viablePlanos';
   const MIME_BY_TILE_TYPE = { 2: 'image/png', 3: 'image/jpeg', 4: 'image/webp', 5: 'image/avif' };
