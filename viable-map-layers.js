@@ -36,6 +36,55 @@
     return window.ViableMapConfig || {};
   }
 
+  /**
+   * Imagen satelital de Esri que, donde no hay imagen a ese nivel (zonas rurales: a veces solo
+   * hasta el 17), agranda la de un nivel menos en vez de mostrar "Map data not yet available".
+   * Con blankTile=false Esri responde 404 en lugar del cartel, y ahí se prueba con el nivel anterior.
+   */
+  const EsriImageryLayer = L.TileLayer.extend({
+    _missing: null,
+
+    _knownMissing: function (z, x, y) {
+      for (let k = 0; z - k >= 0 && k <= 8; k++) {
+        if (this._missing.has((z - k) + '/' + (x >> k) + '/' + (y >> k))) return true;
+      }
+      return false;
+    },
+
+    createTile: function (coords, done) {
+      if (!this._missing) this._missing = new Set();
+      const size = this.getTileSize();
+      const tile = document.createElement('div');
+      tile.style.overflow = 'hidden';
+      const img = document.createElement('img');
+      img.alt = '';
+      img.setAttribute('role', 'presentation');
+      img.style.position = 'absolute';
+      img.style.maxWidth = 'none';
+      img.style.maxHeight = 'none';
+      tile.appendChild(img);
+
+      const layer = this;
+      let d = 0;
+      const attempt = function () {
+        while (d < 6 && coords.z - d > 0 && layer._knownMissing(coords.z - d, coords.x >> d, coords.y >> d)) d++;
+        const z = coords.z - d, x = coords.x >> d, y = coords.y >> d, scale = 1 << d;
+        img.style.width = (size.x * scale) + 'px';
+        img.style.height = (size.y * scale) + 'px';
+        img.style.left = (-(coords.x - (x << d)) * size.x) + 'px';
+        img.style.top = (-(coords.y - (y << d)) * size.y) + 'px';
+        img.onload = function () { done(null, tile); };
+        img.onerror = function () {
+          layer._missing.add(z + '/' + x + '/' + y);
+          if (d < 6 && z > 1) { d++; attempt(); } else { done(new Error('Sin imagen'), tile); }
+        };
+        img.src = L.Util.template(layer._url, L.extend({ z: z, x: x, y: y }, layer.options)) + '?blankTile=false';
+      };
+      attempt();
+      return tile;
+    }
+  });
+
   /** Estilo de Mapbox Studio como teselas raster (Static Tiles API), sin mapbox-gl. */
   function createMapboxLayer(mb) {
     const url = 'https://api.mapbox.com/styles/v1/' + encodeURIComponent(mb.user) + '/' + encodeURIComponent(mb.style) +
@@ -61,7 +110,8 @@
         attribution: '&copy; colaboradores de <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
       })),
       'Satélite': L.layerGroup([
-        L.tileLayer(ESRI_IMAGERY, Object.assign({}, common, {
+        new EsriImageryLayer(ESRI_IMAGERY, Object.assign({}, common, {
+          maxNativeZoom: MAX_ZOOM, // pide el nivel real si existe; si no, agranda el anterior
           attribution: 'Imágenes &copy; Esri, Maxar, Earthstar Geographics y colaboradores'
         })),
         L.tileLayer(ESRI_LABELS, common)
