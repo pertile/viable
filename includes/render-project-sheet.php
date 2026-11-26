@@ -409,6 +409,11 @@ function viable_render_project_sheet($content) {
     if (!is_singular('post')) {
         return $content;
     }
+    // Solo para el artículo que se está viendo: the_content también se aplica a otros
+    // posts (extractos, artículos relacionados) y dibujarles la ficha puede entrar en bucle.
+    if ((int) get_the_ID() !== (int) get_queried_object_id()) {
+        return $content;
+    }
 
     $projects = viable_get_related_projects();
     if (empty($projects)) {
@@ -502,7 +507,13 @@ function viable_render_project_sheet($content) {
                         <article class="related-post-item">
                             <h4><a href="<?= get_permalink() ?>"><?= get_the_title() ?></a></h4>
                             <time class="post-date"><?= get_the_date('j \d\e F \d\e Y') ?></time>
-                            <div class="post-excerpt"><?= get_the_excerpt() ?></div>
+                            <?php // Sin extracto manual, get_the_excerpt() pasa el contenido por the_content
+                                  // y volvería a dibujar la ficha de este artículo (bucle infinito). ?>
+                            <?php if (has_excerpt()): ?>
+                                <div class="post-excerpt"><?= get_the_excerpt() ?></div>
+                            <?php else: ?>
+                                <div class="post-excerpt"><?= wp_trim_words(get_the_content(), 30) ?></div>
+                            <?php endif; ?>
                         </article>
                     <?php endwhile; ?>
                 </div>
@@ -702,6 +713,9 @@ add_filter('the_content', 'viable_render_single_project', 5);
 function viable_render_single_project($content) {
 
     if (!is_singular('project')) {
+        return $content;
+    }
+    if ((int) get_the_ID() !== (int) get_queried_object_id()) {
         return $content;
     }
 
